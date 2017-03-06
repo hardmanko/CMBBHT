@@ -24,3 +24,5 @@ devtools::build(path="packaged")
 # File name depends on the version number.
 install.packages("packaged/CMBBHT_0.1.tar.gz", repos=NULL)
 
+
+devtools::install_github("hardmanko/CMBBHT", build_vignettes = TRUE)
