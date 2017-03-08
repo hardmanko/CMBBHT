@@ -5,9 +5,8 @@ Author: Kyle Hardman <kylehardman@gmail.com>
 Maintainer: Kyle Hardman <kylehardman@gmail.com>
 Description: Performs Bayesian hypothesis tests of designs where cell means or cell-mean-like quantities are estimated. It also works for designs where it is not cell means themselves that are estimated, but differences from a grand mean or intercept. It includes functions for testing main effects and interactions. It can used with nested and unbalanced designs, with a little effort.
 Depends:
-    R (>= 3.0.0)
-Suggests:
-    R.rsp
+    R (>= 3.0.0),
+    R.rsp (>= 0.40.0)
 VignetteBuilder: R.rsp
 License: MIT + file LICENSE
 LazyData: true
