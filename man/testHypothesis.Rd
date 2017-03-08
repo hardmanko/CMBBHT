@@ -6,7 +6,7 @@
 \usage{
 testHypothesis(priorCMs, postCMs, factors, testedFactors,
   dmFactors = testedFactors, contrastType = NULL,
-  testFunction = testFunction_SDDR)
+  testFunction = testFunction_SDDR, usedFactorLevels = NULL)
 }
 \arguments{
 \item{priorCMs}{Numeric matrix. Cell means sampled from the priors. The columns must correspond to the rows of factors but do not need to be named.}
@@ -19,9 +19,11 @@ testHypothesis(priorCMs, postCMs, factors, testedFactors,
 
 \item{dmFactors}{Character vector or formula. The factors to use to construct the design matrix. For a fully-crossed (balanced) design using orthogonal contrasts, this can always be equal to \code{testedFactors} (the default). For non-fully-crossed designs, you may sometimes want to create a design matrix using some factors, but perform a hypothesis test with only some of those factors (\code{testedFactors} must be a subset of \code{dmFactors}). You may supply a \code{formula} like that taken by \code{\link{model.matrix}} which will be used to create the design matrix. The formula should be like \code{~ A * B}, where A and B a factor names with nothing on the left hand side of the "~".}
 
-\item{contrastType}{Character (or function). The contrast to use to create the design matrix. Can be any of the function names on the documentation page for \code{contr.sum}. For a non-fully-crossed (unbalanced) design, you should use either \code{"contr.treatment"} or \code{"contr.SAS"}. For a balanced design, you can use anything, but psychologists are most used to \code{"contr.sum"}, which uses sums-to-zero constraints.}
+\item{contrastType}{Character, function, or list. The contrast to use to create the design matrix. If character, can be any of the function names on the documentation page for \code{contr.sum}. For a non-fully-crossed (unbalanced) design, you should use either \code{"contr.treatment"} or \code{"contr.SAS"}. For a balanced design, you can use anything, but psychologists are most used to \code{"contr.sum"}, which uses sums-to-zero constraints. If a function, it should produce contrasts. If a list, it should be able to be passed directly to the \code{contrasts.arg} argument of \code{\link[stats:model.matrix]{stats::model.matrix}}.}
 
 \item{testFunction}{A function that takes two matrices of prior and posterior effect parameters, in that order. For example, see \code{\link{testFunction_SDDR}}. You can probably leave this at the default value.}
+
+\item{usedFactorLevels}{A \code{data.frame} with a column for each of the factors in \code{testedFactors}. Each row specifies factor levels that should be included in the test. This allows you to do things like pairwise comparisons of specific factor levels. The factor levels that are not in \code{usedFactorLevels} are dropped after calculation of the effect parameters, which means that the kept effect parameters are calculated in the context of any effects that are specified by \code{dmFactors}.}
 }
 \value{
 The return value depends on the choice of \code{testFunction}. See \code{\link{testFunction_SDDR}} for an example.

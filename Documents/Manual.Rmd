@@ -47,7 +47,6 @@ What follow are some examples of the kinds of models that you might have that yo
 
 ## Example 1: Basic cell means model {#example1}
 
-
 You have a design with some number of factors that are crossed in some way to get cells of the design. In each cell of the design, you have some number of replicates/measurements of some dependent variable. Your model estimates the mean of each cell of the design. What follows is a concrete example of such a model, not a specification of what your model must be.
 
 
@@ -168,7 +167,7 @@ ex2_getAlphas = function(mus, posteriorSD = 1, priorMu = 0, priorSD = 3, corners
 	priorCMs = postCMs = matrix(0, nrow = samples, ncol=length(mus))
 	
 	for (i in 1:ncol(postCMs)) {
-		if (!(i %in% cornerstone)) {
+		if (i != cornerstone) {
 			priorCMs[,i] = rnorm(nrow(priorCMs), priorMu, priorSD)
 			postCMs[,i] = rnorm(nrow(postCMs), mus[i], posteriorSD)
 		}

@@ -3,6 +3,8 @@ library(roxygen2)
 
 #install.packages("R.rsp")
 
+
+
 setwd("~/../Programming/R/CMBBHT/")
 
 devtools::use_package("polspline")
@@ -10,7 +12,7 @@ devtools::use_package("polspline")
 file.remove("NAMESPACE")
 devtools::document()
 
-devtools::install()
+devtools::install(build_vignettes = TRUE)
 
 
 
@@ -25,4 +27,8 @@ devtools::build(path="packaged")
 install.packages("packaged/CMBBHT_0.1.tar.gz", repos=NULL)
 
 
+
+remove.packages("CMBBHT")
 devtools::install_github("hardmanko/CMBBHT", build_vignettes = TRUE)
+
+vignette("Manual", "CMBBHT")

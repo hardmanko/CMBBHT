@@ -76,9 +76,13 @@ makeDesignMatrix = function(factors, dmFactors, contrastType, renameCols=FALSE) 
 	
 	o1terms = getFirstOrderTermLabels(tt)
 	
-	contrasts = list()
-	for (fn in o1terms) {
-		contrasts[[fn]] = contrastType
+	contrasts.arg = list()
+	if (is.list(contrastType)) {
+		contrasts.arg = contrastType
+	} else {
+		for (fn in o1terms) {
+			contrasts.arg[[fn]] = contrastType
+		}
 	}
 	
 	# When using a factor, model.matrix seems to use levels(f) instead of unique(f).
@@ -88,9 +92,9 @@ makeDesignMatrix = function(factors, dmFactors, contrastType, renameCols=FALSE) 
 		factors[ , n] = as.character(factors[ , n])
 	}
 	
-	m = stats::model.matrix(form, factors, contrasts)
+	m = stats::model.matrix(form, factors, contrasts.arg)
 
-	if (renameCols && contrastType %in% c("contr.treatment", "contr.SAS")) {
+	if (renameCols && is.character(contrastType) && contrastType %in% c("contr.treatment", "contr.SAS")) {
 		colnames(m) = renameDesignMatrixColumns( colnames(m), factors, dmFactors, contrastType)
 	}
 	
@@ -213,7 +217,7 @@ getEffectParameters = function(cellMeans, factors, testedFactors, dmFactors = te
 			}
 		}
 	} else {
-		if (contrastType %in% c("contr.sum", "contr.helmert", "contr.poly") && !fullyCrossed) {
+		if (!fullyCrossed && contrastType %in% c("contr.sum", "contr.helmert", "contr.poly")) {
 			warning("The design is not fully crossed but you are using orthogonal contrasts. Contrasts cannot actually be orthogonal if the design is not fully crossed.")
 		}
 	}
@@ -252,14 +256,14 @@ getEffectParameters = function(cellMeans, factors, testedFactors, dmFactors = te
 		X_s_rows = 1
 	} else {
 	
-		uniqueFL = unique(subset(factors, select = testedFactors))
-		X_s_rows = rep(NA, nrow(uniqueFL))
+		usedFactorLevels = unique(subset(factors, select = testedFactors))
+		X_s_rows = rep(NA, nrow(usedFactorLevels))
 		
-		for (i in 1:nrow(uniqueFL)) {
+		for (i in 1:nrow(usedFactorLevels)) {
 			
 			rows = NULL
 			for (j in 1:nrow(factors)) {
-				if (all(factors[j, testedFactors] == uniqueFL[i,])) {
+				if (all(factors[j, testedFactors] == usedFactorLevels[i,])) {
 					rows = c(rows, j)
 				}
 			}
@@ -277,7 +281,7 @@ getEffectParameters = function(cellMeans, factors, testedFactors, dmFactors = te
 	if (length(testedFactors) == 1 && testedFactors == "(Intercept)") {
 		colnames(fullEffects) = "(Intercept)"
 	} else {
-		colnames(fullEffects) = makeCellName(uniqueFL)
+		colnames(fullEffects) = makeCellName(usedFactorLevels)
 	}
 	
 	
@@ -294,15 +298,16 @@ getEffectParameters = function(cellMeans, factors, testedFactors, dmFactors = te
 #' @param factors A `data.frame` containing information about the experimental design. Each column is a factor of the design. Each row contains the levels of the factors that define a cell of the design. No additional columns may be included in factors. Factor names and factor levels must not include period (".") or colon (":").
 #' @param testedFactors Character vector. The factors for which to perform the hypothesis test as a vector of factor names. A single factor name results in the test of the main effect of the factor. Multiple factor names result in the test of the interaction of all of those factors.
 #' @param dmFactors Character vector or formula. The factors to use to construct the design matrix. For a fully-crossed (balanced) design using orthogonal contrasts, this can always be equal to `testedFactors` (the default). For non-fully-crossed designs, you may sometimes want to create a design matrix using some factors, but perform a hypothesis test with only some of those factors (`testedFactors` must be a subset of `dmFactors`). You may supply a `formula` like that taken by [`model.matrix`] which will be used to create the design matrix. The formula should be like ` ~ A * B`, where A and B a factor names with nothing on the left hand side of the "~".
-#' @param contrastType Character (or function). The contrast to use to create the design matrix. Can be any of the function names on the documentation page for `contr.sum`. For a non-fully-crossed (unbalanced) design, you should use either `"contr.treatment"` or `"contr.SAS"`. For a balanced design, you can use anything, but psychologists are most used to `"contr.sum"`, which uses sums-to-zero constraints.
+#' @param contrastType Character, function, or list. The contrast to use to create the design matrix. If character, can be any of the function names on the documentation page for `contr.sum`. For a non-fully-crossed (unbalanced) design, you should use either `"contr.treatment"` or `"contr.SAS"`. For a balanced design, you can use anything, but psychologists are most used to `"contr.sum"`, which uses sums-to-zero constraints. If a function, it should produce contrasts. If a list, it should be able to be passed directly to the `contrasts.arg` argument of [`stats::model.matrix`].
 #' @param testFunction A function that takes two matrices of prior and posterior effect parameters, in that order. For example, see [`testFunction_SDDR`]. You can probably leave this at the default value.
+#' @param usedFactorLevels A `data.frame` with a column for each of the factors in `testedFactors`. Each row specifies factor levels that should be included in the test. This allows you to do things like pairwise comparisons of specific factor levels. The factor levels that are not in `usedFactorLevels` are dropped after calculation of the effect parameters, which means that the kept effect parameters are calculated in the context of any effects that are specified by `dmFactors`.
 #' 
 #' @return The return value depends on the choice of `testFunction`. See [`testFunction_SDDR`] for an example.
 #' 
 #' @md
 #' @export
 testHypothesis = function(priorCMs, postCMs, factors, testedFactors, dmFactors = testedFactors,
-													contrastType = NULL, testFunction = testFunction_SDDR) {
+													contrastType = NULL, testFunction = testFunction_SDDR, usedFactorLevels = NULL) {
 	
 	#TODO: Do you want to do this? It's a minor burden on users to specify.
 	if (missing(testedFactors) || is.null(testedFactors)) {
@@ -327,6 +332,13 @@ testHypothesis = function(priorCMs, postCMs, factors, testedFactors, dmFactors =
 	postEffects = getEffectParameters(postCMs, factors, testedFactors, 
 																	dmFactors=dmFactors, contrastType=contrastType)
 	
+	
+	if (!is.null(usedFactorLevels)) {
+		cns = makeCellName(usedFactorLevels)
+		
+		priorEffects = priorEffects[ , cns ]
+		postEffects = postEffects[ , cns ]
+	}
 	
 	#TODO: Keep these errors?
 	if (ncol(priorEffects) != ncol(postEffects)) {

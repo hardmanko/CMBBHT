@@ -3,6 +3,7 @@
 # Unwanted function, but is used by makeDesignMatrix.
 #This function may not be needed (probably shouldn't be needed).
 #fNames should be enough fNames to account for everything in oldNames
+# contrastType may only be scalar character
 renameDesignMatrixColumns = function(oldNames, factors, fNames, contrastType) {
 	
 	newNames = rep(NA, length(oldNames))
@@ -106,6 +107,7 @@ fillOutFullValues_sumsToZero = function(fv, uniqueFL) {
 
 # Unwanted function
 # Assumes that partialWeights has proper names
+# contrastType may only be a scalar character
 fillInWeights = function(partialWeights, factors, fNames, contrastType, uniqueFL = NULL) {
 	
 	if (is.null(uniqueFL)) {
@@ -147,6 +149,7 @@ fillInWeights = function(partialWeights, factors, fNames, contrastType, uniqueFL
 
 # Unwanted function
 # Gets part of S that has been filled in with information about the implicit effect parameters.
+# contrastType may only be a scalar character
 getPartialFilledS = function(factors, testedFactors, dmFactors = testedFactors, contrastType = NULL, warnOnDrop = FALSE) {
 	
 	################################################
@@ -188,6 +191,7 @@ getPartialFilledS = function(factors, testedFactors, dmFactors = testedFactors, 
 	
 	S_s = subset(S, select=mCols)
 	
+	#S_s must have proper names before being passed to fillInWeights
 	colnames(S_s) = renameDesignMatrixColumns(colnames(S_s), factors, testedFactors, contrastType = contrastType)
 	
 	full_s = fillInWeights(S_s, factors, testedFactors, contrastType = contrastType)
