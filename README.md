@@ -8,8 +8,8 @@ Installation
 
 This package can be installed directly from this repository with the following commands in R:
 ```{r}
-#You don't need to do this if you already have an up-to-date devtools installed.
-install.packages("devtools")
+#You can skip this if you already have these packages installed and up-to-date
+install.packages(c("devtools", "R.rsp"))
 
 #Install the package
 devtools::install_github("hardmanko/CMBBHT", build_vignettes = TRUE)
@@ -19,4 +19,4 @@ Once the package is installed, open the manual with
 ```{r}
 vignette("Manual", "CMBBHT")
 ```
-You can also find a pdf of the manual in the `vignettes` directory.
+You can also find a pdf of the manual in the `vignettes` directory of this repository.
