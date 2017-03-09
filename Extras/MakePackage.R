@@ -51,4 +51,6 @@ install.packages( paste0("packaged/CMBBHT_", pkgVer, ".tar.gz"), repos=NULL)
 remove.packages("CMBBHT")
 devtools::install_github("hardmanko/CMBBHT", build_vignettes = TRUE)
 
+devtools::install_github("hardmanko/CMBBHT@v0.1.0", build_vignettes = TRUE)
+
 vignette("Manual", "CMBBHT")

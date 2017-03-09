@@ -2,6 +2,7 @@
 
 export(getEffectParameters)
 export(groupEffectParameters)
+export(isDesignFullyCrossed)
 export(plotEffectParameterSummary)
 export(summarizeEffectParameters)
 export(testFunction_SDDR)
