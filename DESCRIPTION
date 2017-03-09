@@ -1,7 +1,7 @@
 Package: CMBBHT
 Title: Cell Means Based Bayesian Hypothesis Tests
 Version: 0.1.0
-Date: 2017-03-08
+Date: 2017
 Author: Kyle O Hardman <kylehardman@gmail.com>
 Maintainer: Kyle O Hardman <kylehardman@gmail.com>
 Description: Performs Bayesian hypothesis tests of designs where cell
