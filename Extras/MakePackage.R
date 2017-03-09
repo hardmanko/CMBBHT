@@ -4,7 +4,9 @@ library(roxygen2)
 #install.packages("R.rsp")
 
 
-pkgVer = "0.1.0"
+
+#increment pkgVer once a release has been made
+pkgVer = "0.1.1"
 
 setwd("~/../Programming/R/CMBBHT/")
 

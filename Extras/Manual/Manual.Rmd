@@ -1,7 +1,7 @@
 ---
 title: "CMBBHT: Cell Means Based Bayesian Hypothesis Tests"
 author: "Kyle Hardman"
-date: "Package version 0.1.0, February 2017"
+date: "Package version 0.1.1, February 2017"
 output: pdf_document
 linkcolor: blue
 csl: apa-single-spaced.csl
@@ -376,6 +376,14 @@ ht$bf10
 
 
 # Notes
+
+## Citing this Package
+
+If you use this package, please cite it. An APA citation for this package is:
+
+Hardman, K.O. (2017). CMBBHT: Cell Means Based Bayesian Hypothesis Tests (Version `r packageVersion("CMBBHT")`) [Computer software]. Retrieved from https://github.com/hardmanko/CMBBHT/releases/tag/v`r packageVersion("CMBBHT")`
+
+Make sure that the version number is correct in both the name and the URL.
 
 ## The Effect of Uninformative Priors {#uninformativePrior}
 

@@ -1,4 +1,71 @@
 
+#' Determine Whether Factorial Design is Fully Crossed
+#' 
+#' Determine whether the factorial design in `factors` is a fully-crossed design.
+#' 
+#' @param factors See [`testHypothesis`].
+#' @param warnOnDuplicate If `TRUE` and there are duplicate rows in `factors`, a warning that extent is emitted. Note that there are legitmate reasons to have duplicate rows in `factors`.
+#' 
+#' @return `TRUE` if the design is fully crossed, `FALSE` otherwise.
+#' 
+#' @md
+#' @export
+isDesignFullyCrossed = function(factors, warnOnDuplicate = TRUE) {
+	
+	totalCells = 1
+	for (n in names(factors)) {
+		totalCells = totalCells * length(unique(factors[,n]))
+	}
+	
+	uf = unique(factors)
+	if (warnOnDuplicate && nrow(uf) != nrow(factors)) {
+		warning("There are duplicate rows in factors. This may be ok.")
+	}
+	
+	factors = uf
+	if (nrow(factors) == totalCells) {
+		return(TRUE)
+	}
+	
+	FALSE
+}
+
+
+# Internal function
+# cnl can be a list or data.frame.
+makeCellName = function(cnl) {
+	n = ""
+	fNames = names(cnl)
+	for (i in 1:length(fNames)) {
+		fact = fNames[i]
+		lev = cnl[[fact]]
+		n = paste(n, fact, ".", lev, sep="")
+		if (i < length(fNames)) {
+			n = paste(n, ":", sep="")
+		}
+	}
+	n
+}
+
+# Internal function. Goes with makeCellName.
+splitCellName = function(str) {
+	parts = strsplit(str, split = ":", fixed=TRUE)[[1]]
+	
+	fl = list()
+	
+	for (i in 1:length(parts)) {
+		
+		parts2 = strsplit(parts[i], split=".", fixed=TRUE)[[1]]
+		
+		fact = parts2[1]
+		lev = parts2[2]
+		
+		fl[[ fact ]] = lev
+		
+	}
+	fl
+}
+
 
 # Unwanted function, but is used by makeDesignMatrix.
 #This function may not be needed (probably shouldn't be needed).
@@ -140,51 +207,40 @@ fillInWeights = function(partialWeights, factors, fNames, contrastType, uniqueFL
 	} else if (contrastType == "contr.treatment" || contrastType == "contr.SAS") {
 		fullWeights[ is.na(fullWeights) ] = 0
 	} else {
-		stop("Unsupported contrastType.")
+		stop("Unsupported contrastType. The supported types are contr.sum, contr.treatment, and contr.SAS")
 	}
 	
 	fullWeights
 	
 }
 
-# Unwanted function
-# Gets part of S that has been filled in with information about the implicit effect parameters.
-# contrastType may only be a scalar character
-getPartialFilledS = function(factors, testedFactors, dmFactors = testedFactors, contrastType = NULL, warnOnDrop = FALSE) {
+#' Get Part of S, Filled with Implicit Parameters
+#' 
+#' \code{S = solve(t(X) \%*\% X) \%*\% t(X)}.
+#' Gets part of S, selected with `testedFactors`, that has been filled in with information about the implicit effect parameters.
+#' 
+#' 
+#' @param factors See [`testHypothesis`].
+#' @param testedFactors [`testHypothesis`].
+#' @param dmFactors [`testHypothesis`].
+#' @param contrastType May only be one of `"contr.sum"`, `"contr.treatment"`, or `"contr.SAS"`.
+#' 
+#' @md
+#' @return The selected part of the `S` matrix, with additional, implicit parameters included.
+getPartialFilledS = function(factors, testedFactors, dmFactors, contrastType) {
 	
-	################################################
-	# This section is a C/P from getEffectParameters
-	
-	if (is.null(contrastType)) {
-		if (isDesignFullyCrossed(factors, warnOnDuplicate=FALSE)) {
-			contrastType = "contr.sum"
-		} else {
-			contrastType = "contr.treatment"
-		}
+	if (!is.character(contrastType)) {
+		stop("For this function, contrastType may only be a string.")
 	}
 	
-	# 1. Calculate the design matrix, X.
 	dm = makeDesignMatrix(factors, dmFactors, contrastType, renameCols=FALSE)
 	
-	# 1b. If design is not fully crossed, strip excess terms from X.
 	strippedInfo = stripExcessTermsFromDM(dm$mat)
-	
-	if (warnOnDrop && length(strippedInfo$dropped) > 0) {
-		warning( paste0("The design is not fully crossed (unbalanced). As a result, some terms were dropped from the design matrix: ", paste(strippedInfo$dropped, collapse=", "), ". The following terms were kept: ", paste(strippedInfo$kept, collapse=", "), ". The naming of these terms depends on the contrastType that was used.") )
-	}
-	
 	X = dm$mat = strippedInfo$mat
-	
-	
-	# 2. Calculate S = (X'X)^-1 X'
-	# If mu = X beta
-	# then beta = (X'X)^-1 X'mu = S mu
+
 	S = solve(t(X) %*% X) %*% t(X)
-	
-	# End C/P
-	###############################
-	
-	
+
+	# Transpose to make each column related to an effect
 	S = t(S)
 	
 	mCols = getEffectAssignmentColumns(dm, testedFactors)
@@ -194,7 +250,7 @@ getPartialFilledS = function(factors, testedFactors, dmFactors = testedFactors, 
 	#S_s must have proper names before being passed to fillInWeights
 	colnames(S_s) = renameDesignMatrixColumns(colnames(S_s), factors, testedFactors, contrastType = contrastType)
 	
-	full_s = fillInWeights(S_s, factors, testedFactors, contrastType = contrastType)
-	
-	full_s
+	fillInWeights(S_s, factors, testedFactors, contrastType = contrastType)
 }
+
+

@@ -1,62 +1,4 @@
 
-# Maybe make external?
-isDesignFullyCrossed = function(factors, warnOnDuplicate = TRUE) {
-	
-	totalCells = 1
-	for (n in names(factors)) {
-		totalCells = totalCells * length(unique(factors[,n]))
-	}
-	
-	uf = unique(factors)
-	if (warnOnDuplicate && nrow(uf) != nrow(factors)) {
-		warning("There are duplicate rows in factors. This may be ok.")
-	}
-	
-	factors = uf
-	if (nrow(factors) == totalCells) {
-		return(TRUE)
-	}
-	
-	FALSE
-}
-
-
-# Internal function
-# cnl can be a list or data.frame.
-makeCellName = function(cnl) {
-	n = ""
-	fNames = names(cnl)
-	for (i in 1:length(fNames)) {
-		fact = fNames[i]
-		lev = cnl[[fact]]
-		n = paste(n, fact, ".", lev, sep="")
-		if (i < length(fNames)) {
-			n = paste(n, ":", sep="")
-		}
-	}
-	n
-}
-
-# Internal function. Goes with makeCellName.
-splitCellName = function(str) {
-	parts = strsplit(str, split = ":", fixed=TRUE)[[1]]
-	
-	fl = list()
-	
-	for (i in 1:length(parts)) {
-		
-		parts2 = strsplit(parts[i], split=".", fixed=TRUE)[[1]]
-		
-		fact = parts2[1]
-		lev = parts2[2]
-		
-		fl[[ fact ]] = lev
-		
-	}
-	fl
-}
-
-
 
 # Maybe external function?
 # Renaming the columns doesn't really make sense, because the terms are the terms
@@ -126,7 +68,7 @@ stripExcessTermsFromDM = function(mat) {
 }
 
 
-# Internal function.
+# Internal function?
 # Gets the columns of the design matrix associated with particular effects.
 # Those columns are the same as the elements of the effect parameters.
 getEffectAssignmentColumns = function(dm, fNames) {

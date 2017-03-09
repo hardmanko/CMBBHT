@@ -3,6 +3,7 @@ library(CMBBHT)
 
 ?getEffectParameters
 ?testHypothesis
+?getPartialFilledS
 
 
 factors = data.frame(let = rep(letters[1:5], each=3),
@@ -371,6 +372,46 @@ goodIntervalTest = function(prior_eff, post_eff, I_fun) {
 }
 
 goodIntervalTest(prior_eff, post_eff, rangeI)
+
+
+
+###################
+# Test getPartialFilledS
+
+testedFactors = c("let", "num")
+dmFactors = c("let", "num")
+
+contrastType = "contr.treatment"
+
+cellMeans = matrix(mus, nrow=1)
+
+#method 1
+S_s = CMBBHT:::getPartialFilledS(factors, testedFactors, dmFactors, contrastType)
+
+beta_s = cellMeans %*% S_s
+
+
+#method 2
+dm = CMBBHT:::makeDesignMatrix(factors, dmFactors, contrastType, renameCols=FALSE)
+
+strippedInfo = CMBBHT:::stripExcessTermsFromDM(dm$mat)
+
+X = dm$mat = strippedInfo$mat
+
+S = solve(t(X) %*% X) %*% t(X)
+
+beta = t(S %*% t(cellMeans))
+
+
+#method 3
+beta_gep = getEffectParameters(cellMeans, factors, testedFactors, dmFactors = dmFactors, contrastType = contrastType)
+
+
+
+#To the extent that these overlap, they should have the same values
+beta_s
+beta_gep
+beta
 
 
 
