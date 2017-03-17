@@ -1,7 +1,7 @@
 ---
 title: "CMBBHT: Cell Means Based Bayesian Hypothesis Tests"
 author: "Kyle Hardman"
-date: "Package version 0.1.1, February 2017"
+date: "Package version 0.1.1, March 2017"
 output: pdf_document
 linkcolor: blue
 csl: apa-single-spaced.csl

@@ -225,8 +225,10 @@ fillInWeights = function(partialWeights, factors, fNames, contrastType, uniqueFL
 #' @param dmFactors [`testHypothesis`].
 #' @param contrastType May only be one of `"contr.sum"`, `"contr.treatment"`, or `"contr.SAS"`.
 #' 
-#' @md
 #' @return The selected part of the `S` matrix, with additional, implicit parameters included.
+#' 
+#' @md
+#' @export
 getPartialFilledS = function(factors, testedFactors, dmFactors, contrastType) {
 	
 	if (!is.character(contrastType)) {
