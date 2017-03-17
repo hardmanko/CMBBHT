@@ -168,7 +168,7 @@ groupEffectParameters = function(postEffects, method="credInt", CIP = 0.95, prio
 				if (method == "credInt") {
 					
 					difci = stats::quantile(postEffects[,i] - postEffects[,j], cips)
-					eqm[i,j] = difci[1] <= 0 && difci[2] > 0
+					eqm[i,j] = difci[1] <= 0 && difci[2] >= 0
 					
 				} else if (method == "BayesFactor") {
 					
