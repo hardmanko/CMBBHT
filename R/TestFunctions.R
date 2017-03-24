@@ -269,6 +269,7 @@ testFunction_encompassingPriors = function(priorEffects, postEffects, I_M0) {
 #' @param posterior A vector of samples from the posterior of the parameter.
 #' @param testVal The value that will be tested. The null hypothesis is that `P == testVal` and the alternative hypothesis is that `P =/= testVal`.
 #' @param pKept The proportion of the prior and posterior distributions that will be kept. The rest will be discarded from the tails.
+#' @param bounds If `TRUE`, bounds are based on `pKept`. If `FALSE`, no bounds are used. If a length 2 numeric vector, those are the bounds that are used.
 #' 
 #' @return A list with several elements:
 #' * `success`: Whether density estimation was successful. If `FALSE`, all of the other values will be `NULL`.
@@ -279,7 +280,7 @@ testFunction_encompassingPriors = function(priorEffects, postEffects, I_M0) {
 #' 
 #' @md
 #' @export
-valueTest_SDDR = function(prior, posterior, testVal, pKept = 0.96) {
+valueTest_SDDR = function(prior, posterior, testVal, pKept = 0.96, bounds=TRUE) {
 	
 	if (length(prior) != length(posterior)) {
 		warning("The length of the prior and posterior should be the same for accurate density estimation.")
@@ -287,18 +288,36 @@ valueTest_SDDR = function(prior, posterior, testVal, pKept = 0.96) {
 	
 	cips = c((1 - pKept) / 2, (1 + pKept) / 2)
 	
-	prior_qs = stats::quantile(prior, cips)
-	post_qs = stats::quantile(posterior, cips)
+	prior_bounds = stats::quantile(prior, cips)
+	post_bounds = stats::quantile(posterior, cips)
 	
-	priorKept = prior > prior_qs[1] & prior < prior_qs[2]
-	postKept = posterior > post_qs[1] & posterior < post_qs[2]
+	if (is.numeric(bounds) && length(bounds) == 2) {
+		post_bounds = prior_bounds = bounds
+	} else if (is.logical(bounds)) {
+		if (bounds == FALSE) {
+			post_bounds = prior_bounds = c(-Inf, Inf)
+		}
+	} else {
+		stop("Invalid value of the bounds argument.")
+	}
+	
+	priorKept = prior > prior_bounds[1] & prior < prior_bounds[2]
+	postKept = posterior > post_bounds[1] & posterior < post_bounds[2]
 	
 	priorPKept = mean(priorKept)
 	postPKept = mean(postKept)
 	
+	if (testVal < prior_bounds[1] || testVal > prior_bounds[2] || testVal < post_bounds[1] || testVal > post_bounds[2]) {
+		warning("The testVal is outside of the bounds.")
+	}
+
+	if (is.logical(bounds) && bounds == FALSE) {
+		post_bounds = prior_bounds = NULL
+	}
+	
 	success = tryCatch({
-		priorLS = polspline::logspline(prior[ priorKept ], lbound=prior_qs[1], ubound=prior_qs[2])
-		postLS = polspline::logspline(posterior[ postKept ], lbound=post_qs[1], ubound=post_qs[2])
+		priorLS = logspline_null(prior[ priorKept ], lbound=prior_bounds[1], ubound=prior_bounds[2])
+		postLS = logspline_null(posterior[ postKept ], lbound=post_bounds[1], ubound=post_bounds[2])
 		TRUE
 	}, error = function(e) {
 		print(e)
