@@ -258,6 +258,38 @@ testFunction_encompassingPriors = function(priorEffects, postEffects, I_M0) {
 	list(bf01 = bf_01, bf10 = bf_10, prior_sat = denominator, post_sat = numerator)
 }
 
+#' Create Encompassing Priors Interval Test Function
+#' 
+#' Convenience function for using the encompassing priors test function in the case when an interval is to be tested. The null hypothesis is that all of the effect parameters are within the interval.
+#' 
+#' @param lower The lower end of the interval to be used. Single-sided intervals can be constructed by using `-Inf`.
+#' @param upper The upper end of the interval to be used. Single-sided intervals can be constructed by using `Inf`.
+#' 
+#' @return A function that can be passed as the `testFunction` argument of, e.g., [`testHypothesis`].
+#' 
+#' @md
+#' @export
+#' @examples
+#' \dontrun{
+#' tf = create_TF_EPInterval(-0.5, 0.5)
+#' testHypothesis(prior, post, fact, "f", testFunction = tf)
+#' }
+create_TF_EPInterval = function(lower, upper) {
+	
+	rval = local({
+		force(lower)
+		force(upper)
+		function(prior, post) {
+			I_M0 = function(eff) {
+				all(eff >= lower & eff <= upper)
+			}
+			testFunction_encompassingPriors(prior, post, I_M0)
+		}
+	})
+	
+	rval
+}
+
 #' Test Specific Parameter Value
 #' 
 #' Performs a hypothesis test of whether a single parameter, `P`, has a given value, with the value chosen with `testVal`. Uses the Savage-Dickey density ratio.

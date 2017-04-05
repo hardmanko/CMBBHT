@@ -4,7 +4,7 @@
 \alias{valueTest_SDDR}
 \title{Test Specific Parameter Value}
 \usage{
-valueTest_SDDR(prior, posterior, testVal, pKept = 0.96)
+valueTest_SDDR(prior, posterior, testVal, pKept = 0.96, bounds = TRUE)
 }
 \arguments{
 \item{prior}{A vector of samples from the prior of the parameter.}
@@ -14,6 +14,8 @@ valueTest_SDDR(prior, posterior, testVal, pKept = 0.96)
 \item{testVal}{The value that will be tested. The null hypothesis is that \code{P == testVal} and the alternative hypothesis is that \code{P =/= testVal}.}
 
 \item{pKept}{The proportion of the prior and posterior distributions that will be kept. The rest will be discarded from the tails.}
+
+\item{bounds}{If \code{TRUE}, bounds are based on \code{pKept}. If \code{FALSE}, no bounds are used. If a length 2 numeric vector, those are the bounds that are used.}
 }
 \value{
 A list with several elements:

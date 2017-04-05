@@ -1,7 +1,5 @@
 ---
 title: "CMBBHT: Cell Means Based Bayesian Hypothesis Tests"
-author: "Kyle Hardman"
-date: "Package version 0.1.1, March 2017"
 output: pdf_document
 linkcolor: blue
 csl: apa-single-spaced.csl
@@ -13,11 +11,25 @@ toc: yes
 library(CMBBHT)
 ```
 
+# Version
+
+This documentation is for version `r packageVersion("CMBBHT")` of this package. You can install this version of the package with the following two lines of code:
+
+```{r results='markup', comment = "", echo=FALSE}
+cat(knitr::knit_expand(text ='
+install.packages("devtools")
+devtools::install_github("hardmanko/CMBBHT@v{{ver}}", build_vignettes = TRUE)',
+    ver = packageVersion("CMBBHT")))
+
+```
+
+
 # Disclaimer
 
 There are requirements for using this package that you as a user of this package need to be aware of. You are responsible for reading the documentation and the referenced articles. A failure to do so means that your analyses may be very wrong.
-
 That said, the approaches used by this package are fairly general, so you are probably ok at the $p < 0.05$ threshold.
+
+In addition, none of this package has not been peer-reviewed, although some parts of it are going through peer review.
 
 # Introduction
 
@@ -509,8 +521,8 @@ This idea is expressed in Equation 2 of @WetzelsGrasmanWagenmakers2010, which is
 $$
 BF_{01} = \frac{ \frac{1}{m} \sum_{j=1}^m I_{M0}( \vec{\alpha}^{(j)} | D, M_1)  }{ \frac{1}{n} \sum_{k=1}^n I_{M0}( \vec{\alpha}^{(k)} | M_1) }
 $$
-In this equation, the numerator is the posterior (indicated with $| D$ meaning "given data") and the denominator is the prior. 
-$\vec{\alpha}^{(j)}$ is the $j$th vector of effect parameters (all of the $\alpha$s) and the same for $k$.
+
+The numerator contains posterior $\alpha$s (indicated with $| D$ meaning "given data") and the denominator contains prior $\alpha$s. $\vec{\alpha}^{(j)}$ is the $j$th vector of posterior effect parameters (i.e. one posterior sample of all of the $\alpha$s) while $\vec{\alpha}^{(k)}$ is the $k$th vector of prior effect parameters. 
 $I_{M0}$ is an indicator function for the null model, $M_0$. It returns 1 (true) if the constraints of $M_0$ hold or 0 (false) if the constraints of $M_0$ do not hold.
 
 To make this concrete, let's set $\epsilon$ to 1, which makes $M_0$ be that all of the $\alpha$s must be within 1 unit of 0.
@@ -519,7 +531,7 @@ To make this concrete, let's set $\epsilon$ to 1, which makes $M_0$ be that all 
 # The indicator function takes a vector of effect parameters and returns
 # TRUE (numeric 1) if all absolute values are less than 1 and FALSE (0) otherwise
 I_M0 = function(alpha_vect) {
-	all(abs(alpha_vect) < 1)
+	all(abs(alpha_vect) < 1.5)
 }
 
 # Calculate the numerator: The average I_M0 for the posterior
@@ -544,11 +556,14 @@ On the other hand, for the encompassing priors approach, we did not need to calc
 The encompassing priors approach also differs from the SDDR in that SDDR tests a point null, while encompassing priors tests interval nulls. This has both advantages and disadvantages. The advantage is that encompassing priors allows for a test of interval nulls. The disadvantage is that selecting the width or location of the interval is subjective and can strongly influence the results.
 
 The encompassing priors approach can be used with `testFunction_encompassingPriors` as follows:
+
 ```{r}
 ht = testFunction_encompassingPriors(prior_eff, post_eff, I_M0)
 ht$bf10
 ```
+
 If you want pass an encompassing priors test function to `testHypothesis`, you will need to make a curried function in which the indicator function is passed to `testFunction_encompassingPriors`.
+
 ```{r}
 curriedTestFun = function(priorEffects, postEffects) {
 	testFunction_encompassingPriors(priorEffects, postEffects, I_M0)
@@ -559,15 +574,24 @@ ht$bf10
 ```
 
 We can make a different constrained model just by changing the indicator function. In this case, $\epsilon$ is reduced to 0.5, which makes the constrained model more constrained.
+
 ```{r}
 narrower = function(priorEffects, postEffects) {
 	I_fun = function(alpha_vect) {
-		all(abs(alpha_vect) < 0.5)
+		all(abs(alpha_vect) < 1)
 	}
 	testFunction_encompassingPriors(priorEffects, postEffects, I_fun)
 }
 
 ht = testHypothesis(cms$prior, cms$post, factors, "let", testFunction=narrower)
+ht$bf10
+```
+
+If you want to test if the effect parameters are in an interval, which is common, there is a helper function called `create_TF_EPInterval`. This tests the null hypothesis that all of the effect parameters are between -1 and 1, which is equivalent to testing that their absolute values are less than 1, so it should produce the same result as the previous test.
+
+```{r}
+intervalTf = create_TF_EPInterval(-1, 1)
+ht = testHypothesis(cms$prior, cms$post, factors, "let", testFunction=intervalTf)
 ht$bf10
 ```
 
@@ -590,6 +614,8 @@ Note that using the SDDR test function produces different, if still substantivel
 ht = testHypothesis(cms$prior, cms$post, factors, "let", testFunction=testFunction_SDDR)
 ht$bf10
 ```
+
+
 
 ## Testing the Intercept/Grand Mean
 
