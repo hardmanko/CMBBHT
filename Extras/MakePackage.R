@@ -5,8 +5,8 @@ library(roxygen2)
 
 
 
-#increment pkgVer once a release has been made
-pkgVer = "0.1.1"
+#increment pkgVer!!!
+pkgVer = "0.1.2"
 
 setwd("~/../Programming/R/CMBBHT/")
 
@@ -38,19 +38,16 @@ devtools::check()
 
 
 
-
-devtools::build(path="packaged")
-
-# File name depends on the version number.
-install.packages( paste0("packaged/CMBBHT_", pkgVer, ".tar.gz"), repos=NULL)
-
-
-
-
-
 remove.packages("CMBBHT")
 devtools::install_github("hardmanko/CMBBHT", build_vignettes = TRUE)
 
-devtools::install_github("hardmanko/CMBBHT@v0.1.0", build_vignettes = TRUE)
+devtools::install_github("hardmanko/CMBBHT@v0.1.1", build_vignettes = TRUE)
 
 vignette("Manual", "CMBBHT")
+
+
+
+#devtools::build(path="packaged")
+
+# File name depends on the version number.
+install.packages( paste0("packaged/CMBBHT_", pkgVer, ".tar.gz"), repos=NULL)
