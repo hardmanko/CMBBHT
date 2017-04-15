@@ -237,7 +237,7 @@ getPartialFilledS = function(factors, testedFactors, dmFactors, contrastType) {
 	
 	dm = makeDesignMatrix(factors, dmFactors, contrastType, renameCols=FALSE)
 	
-	strippedInfo = stripExcessTermsFromDM(dm$mat)
+	strippedInfo = stripExcessTermsFromDM(dm)
 	X = dm$mat = strippedInfo$mat
 
 	S = solve(t(X) %*% X) %*% t(X)

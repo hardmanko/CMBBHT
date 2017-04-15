@@ -51,19 +51,26 @@ getFirstOrderTermLabels = function(terms) {
 # Maybe external function? Should be external if makeDesignMatrix is external.
 # If the design matrix is not full rank, this function removes columns 
 # that contribute to it being not full rank.
-stripExcessTermsFromDM = function(mat) {
-
+stripExcessTermsFromDM = function(dm) {
+	
+	mat = dm$mat
+	
 	q = qr(mat)
 	
 	kept = q$pivot[ seq(q$rank) ]
 	dropped = q$pivot[ !(seq(ncol(q$qr)) %in% seq(q$rank)) ]
-
+	
+	allAssignments = attr(mat, "assign")
+	keptAssignments = unique(allAssignments[ kept ])
+	fullyDroppedAssignments = unique(allAssignments[ !(allAssignments %in% keptAssignments) ])
+	fullyDroppedTerms = attr(dm$terms, "term.labels")[fullyDroppedAssignments]
+	
 	newMat = subset(mat, select = kept)
 	
 	attr(newMat, "assign") = attr(mat, "assign")[ kept ]
 	attr(newMat, "contrasts") = attr(mat, "contrasts")
 	
-	list(mat=newMat, kept = colnames(mat)[kept], dropped = colnames(mat)[dropped])
+	list(mat=newMat, kept = colnames(mat)[kept], dropped = colnames(mat)[dropped], fullyDroppedTerms = fullyDroppedTerms)
 	
 }
 
@@ -168,7 +175,13 @@ getEffectParameters = function(cellMeans, factors, testedFactors, dmFactors = te
 	dm = makeDesignMatrix(factors, dmFactors, contrastType, renameCols=FALSE)
 
 	# 1b. If design is not fully crossed, strip excess terms from X.
-	strippedInfo = stripExcessTermsFromDM(dm$mat)
+	strippedInfo = stripExcessTermsFromDM(dm)
+	for (fdt in strippedInfo$fullyDroppedTerms) {
+		parts = strsplit(fdt, ":", fixed=TRUE)[[1]]
+		if (all(testedFactors %in% parts)) {
+			stop("Unable to get effect parameters for testedFactors \"", paste(testedFactors, collapse=":"), "\" because all terms related to that effect have been stripped from the design matrix. This error happens when your design is lacking the right cells to allow you to test this effect. You likely have some kind of unbalanced design. See the \"Non-Fully-Crossed/Unbalanced Designs\" section of the CMBBHT package manual.")
+		}
+	}
 	
 	if (warnOnDrop && length(strippedInfo$dropped) > 0) {
 		warning( paste0("The design is not fully crossed (unbalanced). As a result, some terms were dropped from the design matrix: ", paste(strippedInfo$dropped, collapse=", "), ". The following terms were kept: ", paste(strippedInfo$kept, collapse=", "), ". The naming of these terms depends on the contrastType that was used.") )
