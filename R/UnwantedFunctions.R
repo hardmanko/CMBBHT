@@ -235,6 +235,9 @@ getPartialFilledS = function(factors, testedFactors, dmFactors, contrastType) {
 		stop("For this function, contrastType may only be a string.")
 	}
 	
+	testedFactors = splitFactorNames(testedFactors, convertToFormula = FALSE)
+	dmFactors = splitFactorNames(dmFactors)
+	
 	dm = makeDesignMatrix(factors, dmFactors, contrastType, renameCols=FALSE)
 	
 	strippedInfo = stripExcessTermsFromDM(dm)

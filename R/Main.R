@@ -151,6 +151,8 @@ getEffectParameters = function(cellMeans, factors, testedFactors, dmFactors = te
 		}
 	}
 	
+	testedFactors = splitFactorNames(testedFactors, convertToFormula = FALSE)
+	dmFactors = splitFactorNames(dmFactors)
 	
 	fullyCrossed = isDesignFullyCrossed(factors, warnOnDuplicate=FALSE)
 	if (is.null(contrastType)) {
@@ -239,8 +241,25 @@ getEffectParameters = function(cellMeans, factors, testedFactors, dmFactors = te
 		colnames(fullEffects) = makeCellName(usedFactorLevels)
 	}
 	
-	
 	fullEffects
+}
+
+splitFactorNames = function(n, checkForFormula = TRUE, convertToFormula = TRUE) {
+	if (is.null(n)) {
+		return(n)
+	}
+	
+	if (convertToFormula && grepl("^\\s*~", n)) {
+		n = as.formula(n)
+	}
+	
+	if (checkForFormula && class(n) == class(formula())) {
+		return(n)
+	}
+	if (length(n) == 1 && grepl(":", n, fixed=TRUE)) {
+		n = strsplit(n, ":", fixed=TRUE)[[1]]
+	}
+	n
 }
 
 
@@ -272,6 +291,9 @@ testHypothesis = function(priorCMs, postCMs, factors, testedFactors, dmFactors =
 			stop("testedFactors is missing or NULL.")
 		}
 	}
+	
+	testedFactors = splitFactorNames(testedFactors, convertToFormula = FALSE)
+	dmFactors = splitFactorNames(dmFactors)
 	
 	if (nrow(factors) != ncol(priorCMs) || nrow(factors) != ncol(postCMs)) {
 		stop("The number of rows in factors does not correspond to the number of columns in the cell means arguments (priorCMs or postCMs).")
@@ -327,6 +349,8 @@ testHypothesis = function(priorCMs, postCMs, factors, testedFactors, dmFactors =
 #' @md
 #' @export
 testIntercept = function(priorCMs, postCMs, factors, testVal, dmFactors = stats::formula(" ~ 1"), contrastType = NULL, testFunction=valueTest_SDDR) {
+	
+	dmFactors = splitFactorNames(dmFactors)
 	
 	priorInt = getEffectParameters(priorCMs, factors, 
 									 testedFactors = "(Intercept)", dmFactors=dmFactors, 
