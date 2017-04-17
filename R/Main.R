@@ -326,15 +326,93 @@ testHypothesis = function(priorCMs, postCMs, factors, testedFactors, dmFactors =
 		stop("priorEffects or postEffects has less than two columns. You must have at least two effect parameters to perform a hypothesis test of main effects or interactions.")
 	}
 	
-	
 	testFunction(priorEffects, postEffects)
+}
+
+#' Test Multiple Hypotheses
+#' 
+#' 
+#' 
+#' @param prior
+#' @param post
+#' @param factors
+#' @param testFactors Character vector (or list). Interactions should be indicated by putting colons between factor names. For example, the interaction of A and B is given by "A:B". The order of factor names does not matter. If a list, the elements should not be named.
+#' @param dmFactors Character vector (or list) of the same length as `testFactors`.
+#' @param constrastType
+#' @param testFunction
+#' @param usedFactorLevels List of data frames. If provided, should be the same length as `testFactors`.
+#' @param testName Character vector (or list). An optional name for the tests. If provided, should be the same length as `testFactors`.
+#' 
+#' @return A `data.frame` with one test on each row.
+#' 
+#' @md
+#' @export 
+testHypotheses = function(prior, post, factors, testedFactors, dmFactors = testedFactors, contrastType = NULL, testFunction = testFunction_SDDR, usedFactorLevels = NULL, testName = testedFactors) {
+	
+	#If testedFactors is not provided, use all factors.
+	if (missing(testedFactors) || is.null(testedFactors)) {
+		ns = names(factors)
+		testedFactors = list()
+		tfi = 1
+		for (i in 1:length(ns)) {
+			cb = combn(ns, i)
+			for (j in 1:ncol(cb)) {
+				testedFactors[[tfi]] = cb[,j]
+				tfi = tfi + 1
+			}
+		}
+	}
+	
+	if (!is.list(testedFactors)) {
+		testedFactors = as.list(testedFactors)
+	}
+	if (!is.list(dmFactors)) {
+		dmFactors = as.list(dmFactors)
+	}
+	if (!is.list(testName)) {
+		testName = as.list(testName)
+	}
+	
+	if (length(testedFactors) != length(dmFactors) || (!is.null(usedFactorLevels) && length(testedFactors) != length(usedFactorLevels))) {
+		stop("One of testedFactors, dmFactors, and usedFactorLevels has a different length than the others.")
+	}
+	
+	allNames = NULL
+	allRes = list()
+	for (i in 1:length(testedFactors)) {
+
+		temp = list(testName = paste(testName[[i]], collapse=":"))
+		
+		ht = tryCatch({
+			testHypothesis(prior, post, factors, testedFactors[[i]], dmFactors = dmFactors[[i]], contrastType = contrastType, testFunction = testFunction, usedFactorLevels = usedFactorLevels[[i]])
+		}, error = function(e) {
+			print(e)
+			list(success=FALSE)
+		})
+		
+		allRes[[i]] = c(temp, ht)
+		allNames = union(allNames, names(allRes[[i]]))
+	}
+	
+	res = NULL
+	for (i in 1:length(allRes)) {
+		#Add NAs where needed
+		for (n in allNames) {
+			if (!(n %in% names(allRes[[i]]))) {
+				allRes[[i]][[n]] = NA
+			}
+		}
+
+		tr = as.data.frame(allRes[[i]], stringsAsFactors = FALSE)
+		res = rbind(res, tr)
+	}
+	
+	res
 }
 
 #' Test the Value of the Intercept
 #' 
-#' Tests whether the intercept/grand mean has some given value. 
-#' 
-#' For a general test of whether a parameter has a given value, see [`valueTest_SDDR`].
+#' Tests whether the intercept/grand mean has some given value. For a general test of whether a parameter has a given value, see [`valueTest_SDDR`]. Note that in order for this test to be very meaningful (probably)
 #' 
 #' @param priorCMs See [`testHypothesis`].
 #' @param postCMs See [`testHypothesis`].
