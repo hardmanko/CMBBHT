@@ -9,17 +9,27 @@ testHypotheses(prior, post, factors, testedFactors, dmFactors = testedFactors,
   usedFactorLevels = NULL, testName = testedFactors)
 }
 \arguments{
+\item{prior}{See \code{\link{testHypothesis}}.}
+
+\item{post}{See \code{\link{testHypothesis}}.}
+
+\item{factors}{See \code{\link{testHypothesis}}.}
+
 \item{dmFactors}{Character vector (or list) of the same length as \code{testFactors}.}
+
+\item{testFunction}{See \code{\link{testHypothesis}}.}
 
 \item{usedFactorLevels}{List of data frames. If provided, should be the same length as \code{testFactors}.}
 
 \item{testName}{Character vector (or list). An optional name for the tests. If provided, should be the same length as \code{testFactors}.}
 
 \item{testFactors}{Character vector (or list). Interactions should be indicated by putting colons between factor names. For example, the interaction of A and B is given by "A:B". The order of factor names does not matter. If a list, the elements should not be named.}
+
+\item{constrastType}{See \code{\link{testHypothesis}}.}
 }
 \value{
 A \code{data.frame} with one test on each row.
 }
 \description{
-Test Multiple Hypotheses
+Convenience function for testing multiple hypotheses. E.g., for a two factor design, you could test the main effects of A and B plus the interaction of A and B. If using \code{testHypothesis} you would need to call that function three times, but this function requires only one function call.
 }

@@ -331,15 +331,15 @@ testHypothesis = function(priorCMs, postCMs, factors, testedFactors, dmFactors =
 
 #' Test Multiple Hypotheses
 #' 
+#' Convenience function for testing multiple hypotheses. E.g., for a two factor design, you could test the main effects of A and B plus the interaction of A and B. If using `testHypothesis` you would need to call that function three times, but this function requires only one function call.
 #' 
-#' 
-#' @param prior
-#' @param post
-#' @param factors
+#' @param prior See [`testHypothesis`].
+#' @param post See [`testHypothesis`].
+#' @param factors See [`testHypothesis`].
 #' @param testFactors Character vector (or list). Interactions should be indicated by putting colons between factor names. For example, the interaction of A and B is given by "A:B". The order of factor names does not matter. If a list, the elements should not be named.
 #' @param dmFactors Character vector (or list) of the same length as `testFactors`.
-#' @param constrastType
-#' @param testFunction
+#' @param constrastType See [`testHypothesis`].
+#' @param testFunction See [`testHypothesis`].
 #' @param usedFactorLevels List of data frames. If provided, should be the same length as `testFactors`.
 #' @param testName Character vector (or list). An optional name for the tests. If provided, should be the same length as `testFactors`.
 #' 
