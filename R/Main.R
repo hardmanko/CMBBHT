@@ -142,15 +142,17 @@ getEffectAssignmentColumns = function(dm, fNames) {
 #'
 #' @md
 #' @export 
-getEffectParameters = function(cellMeans, factors, testedFactors, dmFactors = testedFactors, 
+getEffectParameters = function(cellMeans, factors, testedFactors, dmFactors = NULL, 
 															 contrastType = NULL, warnOnDrop=FALSE) {
 	
-	if (length(testedFactors) == 1 && testedFactors == "(Intercept)") {
-		if (dmFactors == testedFactors) { #If dmFactors is at the default
+	if (is.null(dmFactors)) {
+		if (length(testedFactors) == 1 && testedFactors == "(Intercept)") {
 			dmFactors = stats::formula(" ~ 1") #only use intercept
+		} else {
+			dmFactors = testedFactors
 		}
 	}
-	
+
 	testedFactors = splitFactorNames(testedFactors, convertToFormula = FALSE)
 	dmFactors = splitFactorNames(dmFactors)
 	
