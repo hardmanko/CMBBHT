@@ -1,4 +1,21 @@
 
+splitFactorNames = function(n, checkForFormula = TRUE, convertToFormula = TRUE) {
+	if (is.null(n)) {
+		return(n)
+	}
+	
+	if (convertToFormula && grepl("^\\s*~", n)) {
+		n = stats::as.formula(n)
+	}
+	
+	if (checkForFormula && class(n) == class(stats::formula())) {
+		return(n)
+	}
+	if (length(n) == 1 && grepl(":", n, fixed=TRUE)) {
+		n = strsplit(n, ":", fixed=TRUE)[[1]]
+	}
+	n
+}
 
 # Maybe external function?
 # Renaming the columns doesn't really make sense, because the terms are the terms
@@ -10,6 +27,7 @@ makeDesignMatrix = function(factors, dmFactors, contrastType, renameCols=FALSE) 
 	if (class(dmFactors) == class(stats::formula())) {
 		form = dmFactors
 	} else {
+		dmFactors = splitFactorNames(dmFactors, checkForFormula=FALSE, convertToFormula=FALSE)
 		form = paste("~", paste(dmFactors, collapse = " * "))
 		form = stats::formula(form)
 	}
@@ -110,8 +128,6 @@ getEffectAssignmentColumns = function(dm, fNames) {
 	mCols
 	
 }
-
-
 
 
 
@@ -246,24 +262,6 @@ getEffectParameters = function(cellMeans, factors, testedFactors, dmFactors = NU
 	fullEffects
 }
 
-splitFactorNames = function(n, checkForFormula = TRUE, convertToFormula = TRUE) {
-	if (is.null(n)) {
-		return(n)
-	}
-	
-	if (convertToFormula && grepl("^\\s*~", n)) {
-		n = as.formula(n)
-	}
-	
-	if (checkForFormula && class(n) == class(formula())) {
-		return(n)
-	}
-	if (length(n) == 1 && grepl(":", n, fixed=TRUE)) {
-		n = strsplit(n, ":", fixed=TRUE)[[1]]
-	}
-	n
-}
-
 
 #' Perform Hypothesis Test from Cell Means
 #' 
@@ -272,8 +270,8 @@ splitFactorNames = function(n, checkForFormula = TRUE, convertToFormula = TRUE) 
 #' @param priorCMs Numeric matrix. Cell means sampled from the priors. The columns must correspond to the rows of factors but do not need to be named.
 #' @param postCMs Numeric matrix. Cell means sampled from the posterior distribution. The columns must correspond to the rows of factors but do not need to be named. 
 #' @param factors A `data.frame` containing information about the experimental design. Each column is a factor of the design. Each row contains the levels of the factors that define a cell of the design. No additional columns may be included in factors. Factor names and factor levels must not include period (".") or colon (":").
-#' @param testedFactors Character vector. The factors for which to perform the hypothesis test as a vector of factor names. A single factor name results in the test of the main effect of the factor. Multiple factor names result in the test of the interaction of all of those factors.
-#' @param dmFactors Character vector or formula. The factors to use to construct the design matrix. For a fully-crossed (balanced) design using orthogonal contrasts, this can always be equal to `testedFactors` (the default). For non-fully-crossed designs, you may sometimes want to create a design matrix using some factors, but perform a hypothesis test with only some of those factors (`testedFactors` must be a subset of `dmFactors`). You may supply a `formula` like that taken by [`model.matrix`] which will be used to create the design matrix. The formula should be like ` ~ A * B`, where A and B a factor names with nothing on the left hand side of the "~".
+#' @param testedFactors Character vector. The factors for which to perform the hypothesis test as a vector of factor names. A single factor name results in the test of the main effect of the factor. Multiple factor names result in the test of the interaction of all of those factors. You may provide either a vector with multiple elements, e.g. `c('A', 'B')`, or a vector with one element where factor names are separated by colon, e.g. `'A:B'`.
+#' @param dmFactors Character vector or formula. The factors to use to construct the design matrix. Like `testedFactors`, you may separate factor names with colon. For a fully-crossed (balanced) design using orthogonal contrasts, this can always be equal to `testedFactors` (the default). For non-fully-crossed designs, you may sometimes want to create a design matrix using a set of factors, but perform a hypothesis test with only some of those factors (`testedFactors` must be a subset of `dmFactors`). This constraint is not tested for if a formula is provided. You may supply a formula like that taken by [`model.matrix`] which will be used to create the design matrix. The formula should be like ` ~ A * B`, where A and B are factor names with nothing on the left hand side of the "~".
 #' @param contrastType Character, function, or list. The contrast to use to create the design matrix. If character, can be any of the function names on the documentation page for `contr.sum`. For a non-fully-crossed (unbalanced) design, you should use either `"contr.treatment"` or `"contr.SAS"`. For a balanced design, you can use anything, but psychologists are most used to `"contr.sum"`, which uses sums-to-zero constraints. If a function, it should produce contrasts. If a list, it should be able to be passed directly to the `contrasts.arg` argument of [`stats::model.matrix`].
 #' @param testFunction A function that takes two matrices of prior and posterior effect parameters, in that order. For example, see [`testFunction_SDDR`]. You can probably leave this at the default value.
 #' @param usedFactorLevels A `data.frame` with a column for each of the factors in `testedFactors`. Each row specifies factor levels that should be included in the test. This allows you to do things like pairwise comparisons of specific factor levels. The factor levels that are not in `usedFactorLevels` are dropped after calculation of the effect parameters, which means that the kept effect parameters are calculated in the context of any effects that are specified by `dmFactors`.
@@ -286,6 +284,7 @@ testHypothesis = function(priorCMs, postCMs, factors, testedFactors, dmFactors =
 													contrastType = NULL, testFunction = testFunction_SDDR, usedFactorLevels = NULL) {
 	
 	#TODO: Do you want to do this? It's a minor burden on users to specify.
+	#Due to lazy evaluation, dmFactors is set to testedFactors after this happens.
 	if (missing(testedFactors) || is.null(testedFactors)) {
 		if (ncol(factors) == 1) {
 			testedFactors = names(factors)
@@ -338,12 +337,12 @@ testHypothesis = function(priorCMs, postCMs, factors, testedFactors, dmFactors =
 #' @param prior See [`testHypothesis`].
 #' @param post See [`testHypothesis`].
 #' @param factors See [`testHypothesis`].
-#' @param testFactors Character vector (or list). Interactions should be indicated by putting colons between factor names. For example, the interaction of A and B is given by "A:B". The order of factor names does not matter. If a list, the elements should not be named.
-#' @param dmFactors Character vector (or list) of the same length as `testFactors`.
-#' @param constrastType See [`testHypothesis`].
+#' @param testedFactors Character vector (or list). Interactions should be indicated by putting colons between factor names. For example, the interaction of A and B is given by "A:B". The order of factor names does not matter. If a list, the elements should not be named.
+#' @param dmFactors Character vector (or list) of the same length as `testedFactors`.
+#' @param contrastType See [`testHypothesis`].
 #' @param testFunction See [`testHypothesis`].
-#' @param usedFactorLevels List of data frames. If provided, should be the same length as `testFactors`.
-#' @param testName Character vector (or list). An optional name for the tests. If provided, should be the same length as `testFactors`.
+#' @param usedFactorLevels List of data frames. If provided, should be the same length as `testedFactors`.
+#' @param testName Character vector (or list). An optional name for the tests. If provided, should be the same length as `testedFactors`.
 #' 
 #' @return A `data.frame` with one test on each row.
 #' 
@@ -357,7 +356,7 @@ testHypotheses = function(prior, post, factors, testedFactors, dmFactors = teste
 		testedFactors = list()
 		tfi = 1
 		for (i in 1:length(ns)) {
-			cb = combn(ns, i)
+			cb = utils::combn(ns, i)
 			for (j in 1:ncol(cb)) {
 				testedFactors[[tfi]] = cb[,j]
 				tfi = tfi + 1
@@ -429,9 +428,7 @@ testHypotheses = function(prior, post, factors, testedFactors, dmFactors = teste
 #' @md
 #' @export
 testIntercept = function(priorCMs, postCMs, factors, testVal, dmFactors = stats::formula(" ~ 1"), contrastType = NULL, testFunction=valueTest_SDDR) {
-	
-	dmFactors = splitFactorNames(dmFactors)
-	
+
 	priorInt = getEffectParameters(priorCMs, factors, 
 									 testedFactors = "(Intercept)", dmFactors=dmFactors, 
 									 contrastType=contrastType)

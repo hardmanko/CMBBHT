@@ -4,8 +4,8 @@
 \alias{getEffectParameters}
 \title{Calculate Effect Parameter Matrix}
 \usage{
-getEffectParameters(cellMeans, factors, testedFactors,
-  dmFactors = testedFactors, contrastType = NULL, warnOnDrop = FALSE)
+getEffectParameters(cellMeans, factors, testedFactors, dmFactors = NULL,
+  contrastType = NULL, warnOnDrop = FALSE)
 }
 \arguments{
 \item{cellMeans}{A matrix of cell means. Each column is a cell and each row is a sample from the prior or posterior. The columns must correspond to the rows of \code{factors}.}

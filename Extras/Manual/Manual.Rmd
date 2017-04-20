@@ -29,7 +29,7 @@ devtools::install_github("hardmanko/CMBBHT@v{{ver}}", build_vignettes = TRUE)',
 There are requirements for using this package that you as a user of this package need to be aware of. You are responsible for reading the documentation and the referenced articles. A failure to do so means that your analyses may be very wrong.
 That said, the approaches used by this package are fairly general, so you are probably ok at the $p < 0.05$ threshold.
 
-In addition, none of this package has not been peer-reviewed, although some parts of it are going through peer review.
+In addition, none of this package has been peer-reviewed, although some parts of it are going through peer review.
 
 # Introduction
 
@@ -77,7 +77,7 @@ $$
 $$
 
 
-This design is possibly workable, but it has the issu that the prior on the cell means is uninformative. The problem with uninformative priors is discussed further [here](#uninformativePrior). I prefer the design in the next example, which is able to place informative priors on the quantities of interest.
+This design is possibly workable, but it has the issue that the prior on the cell means is uninformative. The problem with uninformative priors is discussed further [here](#uninformativePrior). I prefer the design in the next example, which is able to place informative priors on the quantities of interest.
 
 
 ## Example 2: Grand mean plus Cell Offsets/Differences/Effects {#example2}
@@ -242,7 +242,7 @@ testHypothesis(cms$prior, cms$post, factors, "let")
 ```
 With default settings, this returns a list with four elements. As long as `success` is `TRUE`, we can examine `bf10`, which is the Bayes factor in favor of the hypothesis that there is a main effect of the `let` factor. This Bayes factor is substantial, so there is a main effect of `let`.
 
-The test of the main effect of `num` procedes in the same way.
+The test of the main effect of `num` proceeds in the same way.
 ```{r}
 ht = testHypothesis(cms$prior, cms$post, factors, "num")
 ht$bf10
@@ -267,17 +267,18 @@ I am going to perform a test of the hypothesis that there is a main effect of th
 
 ## Effect Parameters
 
-You can calculate matrices of effect parameters given cell means/differences and the `factors` `data.frame` with the function `getEffectParameters`. Here I calculate the posterior effects. 
+You can calculate matrices of effect parameters given cell means/differences and the `factors` `data.frame` with the function `getEffectParameters`. Here I calculate the posterior effects for the main effect of the `let` factor. 
 
 ```{r}
-# Get effect parameters for the "let" main effect.
 post_eff = getEffectParameters(cms$post, factors, "let")
 post_eff[1:5,]
 ```
 
-Again, if there is no main effect, there should be no difference between the levels of the `let` factor and the effect parameters should be near 0.
+A number of steps happen in `getEffectParameters`, but those steps are not important to understanding the concept of how the hypothesis testing procedure works, so I will skip them. The process is mechanical and not controversial. 
 
-You can summarize the effect parameters with the `summarizeEffectParameters` function.
+Again, if there is no main effect, there should be no difference between the levels of the `let` factor and the effect parameters should be near 0. One informal way of answering this question is to examine values of the effect parameters.
+
+You can get means and credible intervals for the effect parameters with the `summarizeEffectParameters` function.
 
 ```{r}
 summary = summarizeEffectParameters(post_eff)
@@ -292,7 +293,6 @@ plotEffectParameterSummary(summary)
 
 As you can see, there appears to be a main effect because the effect parameters are reasonably far from one another, relative to their credible intervals.
 
-
 If you don't like Bayes factors as a method of inference, you can still get something out of this package by using summaries of the posterior effect parameters. Alternately, you can group posterior effects with pairwise comparisons with `groupEffectParameters`
 
 ```{r}
@@ -305,7 +305,7 @@ By default, `groupEffectParameters` uses credible intervals of the difference be
 
 ## Deviance Measure
 
-We now that have explored the effect parameters, we can move on to the next step. Again, under the null hypothesis, the effect parameters should be near to one another. Under the alternative hypothesis, the effect parameters may be more spread out.
+Now that have explored the effect parameters, we can move on to the next step. Again, under the null hypothesis, the effect parameters should be near to one another. Under the alternative hypothesis, the effect parameters may be more spread out.
 What we want is a measure of the deviance/spread of the effect parameters.
 The default deviance measure used by this package is the sample variance, which I have found to work well (there is no difference between sample variance and population variance in this case; it's just a scale factor). 
 
@@ -461,7 +461,7 @@ A prior SD of 5 is black and a prior SD of 20 is green. As you can see, changing
 
 The following code shows what happens when you build an effect into the prior. There is a main effect, but it is the same main effect as in the prior, so the evidence is in favor of the null.
 ```{r}
-cm1_h1_builtIn = ex1_getCMs(mus, priorMu = mus)
+cm1_h1_builtIn = ex1_getCMs(mus, priorMu = mus, priorSD = 3, posteriorSD = 1)
 testHypothesis(cm1_h1_builtIn$prior, cm1_h1_builtIn$post, fact, "f")
 ```
 
@@ -619,9 +619,9 @@ ht$bf10
 
 ## Testing the Intercept/Grand Mean
 
-If you want to test the value of the intercept of the model, use the `testIntercept` function. Note that this tests the intercept of whatever cell means you provide to it. Thus, if you provide cell effects like from the model in Example 2, you are testing the intercept of hose cell effects, not of the actual cell means.
+If you want to test the value of the intercept of the model, use the `testIntercept` function. Note that this tests the intercept of whatever cell means you provide to it. Thus, if you provide cell effects like from the model in Example 2, you are testing the intercept of those cell effects, not of the actual cell means.
 
-The value of the intercept depends on the type of contrasts that you use. For orthogonal contrasts, the intercept is the grand mean, but it has a different value for treatment contrasts (`contr.
+The value of the intercept depends on the type of contrasts that you use. For orthogonal contrasts, the intercept is the grand mean, but it has a different value for treatment contrasts (`contr.treatment`).
 ```{r}
 testIntercept(cms$prior, cms$post, factors, testVal = 2.5)
 

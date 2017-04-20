@@ -27,8 +27,5 @@ testIntercept(priorCMs, postCMs, factors, testVal,
 The result of the function depends on the choice of \code{testFunction}. See \code{\link{valueTest_SDDR}} for an example.
 }
 \description{
-Tests whether the intercept/grand mean has some given value.
-}
-\details{
-For a general test of whether a parameter has a given value, see \code{\link{valueTest_SDDR}}.
+Tests whether the intercept/grand mean has some given value. For a general test of whether a parameter has a given value, see \code{\link{valueTest_SDDR}}. Note that in order for this test to be very meaningful (probably)
 }

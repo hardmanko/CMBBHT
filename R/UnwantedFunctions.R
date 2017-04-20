@@ -73,6 +73,10 @@ splitCellName = function(str) {
 # contrastType may only be scalar character
 renameDesignMatrixColumns = function(oldNames, factors, fNames, contrastType) {
 	
+	if (class(fNames) == class(stats::formula())) {
+		stop("The provided fNames are a formula. They must be a character vector.")
+	}
+	
 	newNames = rep(NA, length(oldNames))
 	
 	for (i in 1:length(oldNames)) {
@@ -236,7 +240,6 @@ getPartialFilledS = function(factors, testedFactors, dmFactors, contrastType) {
 	}
 	
 	testedFactors = splitFactorNames(testedFactors, convertToFormula = FALSE)
-	dmFactors = splitFactorNames(dmFactors)
 	
 	dm = makeDesignMatrix(factors, dmFactors, contrastType, renameCols=FALSE)
 	

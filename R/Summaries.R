@@ -137,7 +137,6 @@ groupEffectParameters = function(postEffects, method="credInt", CIP = 0.95, prio
 	}
 	
 	
-	
 	cips = c((1 - CIP) / 2, (1 + CIP) / 2)
 	
 	

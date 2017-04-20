@@ -15,17 +15,17 @@ testHypotheses(prior, post, factors, testedFactors, dmFactors = testedFactors,
 
 \item{factors}{See \code{\link{testHypothesis}}.}
 
-\item{dmFactors}{Character vector (or list) of the same length as \code{testFactors}.}
+\item{testedFactors}{Character vector (or list). Interactions should be indicated by putting colons between factor names. For example, the interaction of A and B is given by "A:B". The order of factor names does not matter. If a list, the elements should not be named.}
+
+\item{dmFactors}{Character vector (or list) of the same length as \code{testedFactors}.}
+
+\item{contrastType}{See \code{\link{testHypothesis}}.}
 
 \item{testFunction}{See \code{\link{testHypothesis}}.}
 
-\item{usedFactorLevels}{List of data frames. If provided, should be the same length as \code{testFactors}.}
+\item{usedFactorLevels}{List of data frames. If provided, should be the same length as \code{testedFactors}.}
 
-\item{testName}{Character vector (or list). An optional name for the tests. If provided, should be the same length as \code{testFactors}.}
-
-\item{testFactors}{Character vector (or list). Interactions should be indicated by putting colons between factor names. For example, the interaction of A and B is given by "A:B". The order of factor names does not matter. If a list, the elements should not be named.}
-
-\item{constrastType}{See \code{\link{testHypothesis}}.}
+\item{testName}{Character vector (or list). An optional name for the tests. If provided, should be the same length as \code{testedFactors}.}
 }
 \value{
 A \code{data.frame} with one test on each row.
