@@ -212,20 +212,21 @@ testFunction_SDDR = function(priorEffects, postEffects, devianceFunction = NULL,
 }
 
 
-#' Test Function: Encompassing Priors
+#' Test Function: Encompassing Prior
 #' 
-#' See the manual for this package for more information about the encompassing priors approach. There is some encompassing model, `M_1`, and a constrained model, `M_0`, which is created by placing some constraint on the parameters of `M_1`. The function `I_M0` that is passed to this function determines whether the constraint is satisfied.
+#' See the manual for this package for more information about the encompassing prior approach. There is some encompassing model, `M_1`, and a constrained model, `M_0`, which is created by placing some constraint on some of the parameters of `M_1`. The function `I_M0` that is passed to this function determines whether the constraint is satisfied.
 #'  
 #' Note that you cannot pass this function directly as the `testFunction` argument of [`testHypothesis`] because there is no default value for `I_M0`. Thus, you must create a curried function to pass to [`testHypothesis`]. See the examples.
 #' 
-#' @param priorEffects A numeric matrix of prior effect parameters. Rows are samples and columns parameters.
-#' @param postEffects A numeric matrix of posterior effect parameters. Rows are samples and columns parameters.
+#' @param priorEffects A numeric matrix of prior effect parameters. Rows are samples and columns are parameters.
+#' @param postEffects A numeric matrix of posterior effect parameters. Rows are samples and columns are parameters.
 #' @param I_M0 The indicator function for the constrained model, `M_0`. This is a function that takes a vector of effect parameters, checks some constraint on those parameters, and returns 1 (or `TRUE`) if the constraint is satisfied or 0 (or `FALSE`) if the constraint is not satisfied.
 #' 
 #' @return A list for the following elements:
+#' * `success`: Logical. Whether or not the test was successful. Currently, this is always `TRUE`.
 #' * `bf10`: The Bayes factor in favor of the encompassing/alternative model, `M_1`.
 #' * `bf01`: The Bayes factor in favor of the constrained/null model, `M_0`.
-#' * `prior_pSat`, `post_pSat`: The proportions of the prior and posterior, respectively, that satisfy the constraint of `I_M0`. If these are both very low, it indicates that your constraint is possibly too narrow and that the estimated Bayes factor may be noisy.
+#' * `prior_pSat`, `post_pSat`: The proportions of the prior and posterior, respectively, that satisfy the constraint of `I_M0`. If these are both very low, it indicates that your constraint is possibly too narrow (in some sense of "narrow") and that the estimated Bayes factor may be noisy.
 #' 
 #' @md
 #' @export
@@ -236,12 +237,12 @@ testFunction_SDDR = function(priorEffects, postEffects, devianceFunction = NULL,
 #'   I_M0 = function(eff) {
 #'     all(abs(eff) < 2)
 #'   }
-#'   testFunction_encompassingPriors(priorEffects, postEffects, I_M0)
+#'   testFunction_encompassingPrior(priorEffects, postEffects, I_M0)
 #' }
 #' 
 #' testHypothesis(..., testFunction = curriedTestFun)
 #' }
-testFunction_encompassingPriors = function(priorEffects, postEffects, I_M0) {
+testFunction_encompassingPrior = function(priorEffects, postEffects, I_M0) {
 	
 	# Calculate the numerator: The average I_M0 for the posterior
 	post_sat = apply(postEffects, 1, I_M0)
@@ -258,9 +259,9 @@ testFunction_encompassingPriors = function(priorEffects, postEffects, I_M0) {
 	list(bf01 = bf_01, bf10 = bf_10, prior_sat = denominator, post_sat = numerator)
 }
 
-#' Create Encompassing Priors Interval Test Function
+#' Create Encompassing Prior Interval Test Function
 #' 
-#' Convenience function for using the encompassing priors test function in the case when an interval is to be tested. The null hypothesis is that all of the effect parameters are within the interval.
+#' Convenience function for using the encompassing prior test function in the case when an interval is to be tested. The null hypothesis is that all of the effect parameters are within the interval.
 #' 
 #' @param lower The lower end of the interval to be used. Single-sided intervals can be constructed by using `-Inf`.
 #' @param upper The upper end of the interval to be used. Single-sided intervals can be constructed by using `Inf`.
@@ -283,7 +284,7 @@ create_TF_EPInterval = function(lower, upper) {
 			I_M0 = function(eff) {
 				all(eff >= lower & eff <= upper)
 			}
-			testFunction_encompassingPriors(prior, post, I_M0)
+			testFunction_encompassingPrior(prior, post, I_M0)
 		}
 	})
 	

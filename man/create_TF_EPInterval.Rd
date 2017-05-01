@@ -2,7 +2,7 @@
 % Please edit documentation in R/TestFunctions.R
 \name{create_TF_EPInterval}
 \alias{create_TF_EPInterval}
-\title{Create Encompassing Priors Interval Test Function}
+\title{Create Encompassing Prior Interval Test Function}
 \usage{
 create_TF_EPInterval(lower, upper)
 }
@@ -15,7 +15,7 @@ create_TF_EPInterval(lower, upper)
 A function that can be passed as the \code{testFunction} argument of, e.g., \code{\link{testHypothesis}}.
 }
 \description{
-Convenience function for using the encompassing priors test function in the case when an interval is to be tested. The null hypothesis is that all of the effect parameters are within the interval.
+Convenience function for using the encompassing prior test function in the case when an interval is to be tested. The null hypothesis is that all of the effect parameters are within the interval.
 }
 \examples{
 \dontrun{
