@@ -198,7 +198,7 @@ getEffectParameters = function(cellMeans, factors, testedFactors, dmFactors = NU
 	strippedInfo = stripExcessTermsFromDM(dm)
 	for (fdt in strippedInfo$fullyDroppedTerms) {
 		parts = strsplit(fdt, ":", fixed=TRUE)[[1]]
-		if (all(testedFactors %in% parts)) {
+		if (length(testedFactors) == length(parts) && all(testedFactors %in% parts)) {
 			stop("Unable to get effect parameters for testedFactors \"", paste(testedFactors, collapse=":"), "\" because all terms related to that effect have been stripped from the design matrix. This error happens when your design is lacking the right cells to allow you to test this effect. You likely have some kind of unbalanced design. See the \"Non-Fully-Crossed/Unbalanced Designs\" section of the CMBBHT package manual.")
 		}
 	}
