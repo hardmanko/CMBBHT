@@ -40,7 +40,7 @@ devianceFunction_absDif = function(x) {
 }
 
 # Internal function
-# To deal with the fact that logspline doesn't like NULL arguments.
+# To deal with the fact that logspline doesn't like NULL arguments for lbound and ubound.
 logspline_null = function(x, lbound=NULL, ubound=NULL) {
 	
 	ls = NULL
@@ -106,10 +106,10 @@ logspline_null = function(x, lbound=NULL, ubound=NULL) {
 #' @param warnOnLength If `TRUE` and the `prior` and `posterior` are not the same length, a warning will be emitted.
 #'
 #' @return A list with four elements: 
+#' * `success`: A boolean indicating whether there was an exception during density estimation. If `success` is `FALSE`, all other values will be `NULL` or `NA`.
 #' * `bf01`: The Bayes factor in favor of H0.
 #' * `bf10`: The Bayes factor in favor of H1. 
 #' * `pKept`: The proportion of the prior distribution that was used to estimate the density;
-#' * `success`: A boolean indicating whether there was an exception during density estimation. If `success` is `FALSE`, all other values will be `NULL` or `NA`.
 #' 
 #' @md
 #' @export
@@ -203,9 +203,9 @@ testFunction_SDDR = function(priorEffects, postEffects, devianceFunction = NULL,
 		# Savage-Dickey step
 		bf10 = priorDens / postDens
 		
-		rval = list(bf01 = 1 / bf10, bf10 = bf10, pKept = pKept, success = TRUE)
+		rval = list(success = TRUE, bf01 = 1 / bf10, bf10 = bf10, pKept = pKept)
 	} else {
-		rval = list(bf01 = NA, bf10 = NA, pKept=NA, success = FALSE)
+		rval = list(success = FALSE, bf01 = NA, bf10 = NA, pKept = NA)
 	}
 	
 	rval
@@ -299,8 +299,8 @@ create_EPA_intervalTF = function(lower, upper) {
 #' 
 #' Performs a hypothesis test of whether a single parameter, `P`, has a given value, with the value chosen with `testVal`. Uses the Savage-Dickey density ratio.
 #' 
-#' This function assumes that the prior and posterior are both unbounded and potentially diffuse. To account for diffuse priors, it truncates
-# Assumes that the density at the truncation points is near 0.
+#' This function assumes that the prior and posterior are both unbounded and potentially diffuse. To account for diffuse priors, it truncates both the prior and posterior in some way. By default, it keeps some proportion of the prior and posterior, which is set by the `pKept` argument. You use some combination of the `pKept` and `bounds` arguments to set the bounds.
+# It assumes that the density at the truncation points is near 0.
 #' 
 #' @param prior A vector of samples from the prior of the parameter.
 #' @param posterior A vector of samples from the posterior of the parameter.
@@ -309,7 +309,7 @@ create_EPA_intervalTF = function(lower, upper) {
 #' @param bounds If `TRUE`, bounds are based on `pKept`. If `FALSE`, no bounds are used. If a length 2 numeric vector, those are the bounds that are used.
 #' 
 #' @return A list with several elements:
-#' * `success`: Whether density estimation was successful. If `FALSE`, all of the other values will be `NULL`.
+#' * `success`: Whether density estimation was successful. If `FALSE`, all of the other values will be `NA` or `NULL`.
 #' * `bf10`: The Bayes factor in favor of the hypothesis that `P == testVal`.
 #' * `bf01`: The Bayes factor in favor of the hypothesis that `P =/= testVal`.
 #' * `prior_pKept`: The actual proportion of the prior that was kept. Should usually be equal to `pKept`.
@@ -338,15 +338,29 @@ valueTest_SDDR = function(prior, posterior, testVal, pKept = 0.96, bounds=TRUE) 
 		stop("Invalid value of the bounds argument.")
 	}
 	
+	if (testVal < prior_bounds[1] || testVal > prior_bounds[2] || testVal < post_bounds[1] || testVal > post_bounds[2]) {
+		warning("The testVal is outside of the bounds. The bounds have been adjusted so that the testVal is within bounds.")
+		if (testVal < prior_bounds[1] && testVal < prior_bounds[2]) {
+			prior_bounds[1] = testVal
+		}
+		if (testVal > prior_bounds[1] && testVal > prior_bounds[2]) {
+			prior_bounds[2] = testVal
+		}
+		if (testVal < post_bounds[1] && testVal < post_bounds[2]) {
+			post_bounds[1] = testVal
+		}
+		if (testVal > post_bounds[1] && testVal > post_bounds[2]) {
+			post_bounds[2] = testVal
+		}
+	}
+	
 	priorKept = prior > prior_bounds[1] & prior < prior_bounds[2]
 	postKept = posterior > post_bounds[1] & posterior < post_bounds[2]
 	
 	priorPKept = mean(priorKept)
 	postPKept = mean(postKept)
 	
-	if (testVal < prior_bounds[1] || testVal > prior_bounds[2] || testVal < post_bounds[1] || testVal > post_bounds[2]) {
-		warning("The testVal is outside of the bounds.")
-	}
+
 
 	if (is.logical(bounds) && bounds == FALSE) {
 		post_bounds = prior_bounds = NULL
@@ -372,9 +386,9 @@ valueTest_SDDR = function(prior, posterior, testVal, pKept = 0.96, bounds=TRUE) 
 		
 		bf10 = priorDens / postDens
 		
-		rval = list(bf01 = 1 / bf10, bf10 = bf10, prior_pKept = priorPKept, post_pKept = postPKept, success = TRUE)
+		rval = list(success = TRUE, bf01 = 1 / bf10, bf10 = bf10, prior_pKept = priorPKept, post_pKept = postPKept)
 	} else {
-		rval = list(success = FALSE)
+		rval = list(success = FALSE, bf01 = NA, bf10 = NA, prior_pKept = NA, post_pKept = NA)
 	}
 	
 	rval

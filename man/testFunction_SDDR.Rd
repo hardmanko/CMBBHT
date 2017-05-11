@@ -26,10 +26,10 @@ testFunction_SDDR(priorEffects, postEffects, devianceFunction = NULL,
 \value{
 A list with four elements:
 \itemize{
+\item \code{success}: A boolean indicating whether there was an exception during density estimation. If \code{success} is \code{FALSE}, all other values will be \code{NULL} or \code{NA}.
 \item \code{bf01}: The Bayes factor in favor of H0.
 \item \code{bf10}: The Bayes factor in favor of H1.
 \item \code{pKept}: The proportion of the prior distribution that was used to estimate the density;
-\item \code{success}: A boolean indicating whether there was an exception during density estimation. If \code{success} is \code{FALSE}, all other values will be \code{NULL} or \code{NA}.
 }
 }
 \description{

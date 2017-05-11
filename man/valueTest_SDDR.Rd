@@ -20,7 +20,7 @@ valueTest_SDDR(prior, posterior, testVal, pKept = 0.96, bounds = TRUE)
 \value{
 A list with several elements:
 \itemize{
-\item \code{success}: Whether density estimation was successful. If \code{FALSE}, all of the other values will be \code{NULL}.
+\item \code{success}: Whether density estimation was successful. If \code{FALSE}, all of the other values will be \code{NA} or \code{NULL}.
 \item \code{bf10}: The Bayes factor in favor of the hypothesis that \code{P == testVal}.
 \item \code{bf01}: The Bayes factor in favor of the hypothesis that \code{P =/= testVal}.
 \item \code{prior_pKept}: The actual proportion of the prior that was kept. Should usually be equal to \code{pKept}.
@@ -31,5 +31,5 @@ A list with several elements:
 Performs a hypothesis test of whether a single parameter, \code{P}, has a given value, with the value chosen with \code{testVal}. Uses the Savage-Dickey density ratio.
 }
 \details{
-This function assumes that the prior and posterior are both unbounded and potentially diffuse. To account for diffuse priors, it truncates
+This function assumes that the prior and posterior are both unbounded and potentially diffuse. To account for diffuse priors, it truncates both the prior and posterior in some way. By default, it keeps some proportion of the prior and posterior, which is set by the \code{pKept} argument. You use some combination of the \code{pKept} and \code{bounds} arguments to set the bounds.
 }

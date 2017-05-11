@@ -31,3 +31,6 @@ The return value depends on the choice of \code{testFunction}. See \code{\link{t
 \description{
 This is the primary function in this package. It takes two matrices of prior and posterior cell means, a \code{data.frame} containing information about the factor levels in the design, and what effect you want to test. It computes a Bayes factor related to the hypothesis that the effect is present in the cell means.
 }
+\seealso{
+See \code{\link{testHypotheses}} for performing multiple tests at once. See \code{\link{groupEffectParameters}} for pairwise comparisons of effect parameters.
+}

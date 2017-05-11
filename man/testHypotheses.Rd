@@ -33,3 +33,15 @@ A \code{data.frame} with one test on each row.
 \description{
 Convenience function for testing multiple hypotheses. E.g., for a two factor design, you could test the main effects of A and B plus the interaction of A and B. If using \code{testHypothesis} you would need to call that function three times, but this function requires only one function call.
 }
+\examples{
+\dontrun{
+prior = getPrior()
+post = getPost()
+factors = data.frame(let = c('A', 'A', 'B', 'B'),
+num = c('1', '2', '1', '2'))
+# Test both main effects and the interaction
+testHypotheses(prior, post, factors, 
+  testedFactors = c('let', 'num', 'let:num'))
+
+}
+}
