@@ -214,19 +214,19 @@ testFunction_SDDR = function(priorEffects, postEffects, devianceFunction = NULL,
 
 #' Test Function: Encompassing Prior
 #' 
-#' See the manual for this package for more information about the encompassing prior approach. There is some encompassing model, `M_1`, and a constrained model, `M_0`, which is created by placing some constraint on some of the parameters of `M_1`. The function `I_M0` that is passed to this function determines whether the constraint is satisfied.
+#' See the "Encompassing Prior Approach" section of the package manual for an explanation of this approach to estimating Bayes factors. There is some encompassing model, `M_1`, and a constrained model, `M_0`, which is created by placing some constraint on some of the parameters of `M_1`. The function `I_M0` that is passed to this function determines whether the constraint is satisfied.
 #'  
-#' Note that you cannot pass this function directly as the `testFunction` argument of [`testHypothesis`] because there is no default value for `I_M0`. Thus, you must create a curried function to pass to [`testHypothesis`]. See the examples.
+#' Note that you cannot pass this function directly as the `testFunction` argument of [`testHypothesis`] because there is no default value for `I_M0`. Thus, you must create a curried function to pass to [`testHypothesis`] or use [`create_EPA_intervalTF`]. See the examples for an example of currying.
 #' 
 #' @param priorEffects A numeric matrix of prior effect parameters. Rows are samples and columns are parameters.
 #' @param postEffects A numeric matrix of posterior effect parameters. Rows are samples and columns are parameters.
 #' @param I_M0 The indicator function for the constrained model, `M_0`. This is a function that takes a vector of effect parameters, checks some constraint on those parameters, and returns 1 (or `TRUE`) if the constraint is satisfied or 0 (or `FALSE`) if the constraint is not satisfied.
 #' 
 #' @return A list for the following elements:
-#' * `success`: Logical. Whether or not the test was successful. Currently, this is always `TRUE`.
+#' * `success`: Logical. Whether or not the test was successful. This is `FALSE` if the Bayes factors are infinte, NaN, or NA, or `TRUE` otherwise.
 #' * `bf10`: The Bayes factor in favor of the encompassing/alternative model, `M_1`.
 #' * `bf01`: The Bayes factor in favor of the constrained/null model, `M_0`.
-#' * `prior_pSat`, `post_pSat`: The proportions of the prior and posterior, respectively, that satisfy the constraint of `I_M0`. If these are both very low, it indicates that your constraint is possibly too narrow (in some sense of "narrow") and that the estimated Bayes factor may be noisy.
+#' * `prior_satisfied`, `post_satisfied`: The proportions of the prior and posterior, respectively, that satisfy the constraint of `I_M0`. If these are both low and the number of samples satisfying the constraint is small, it indicates that your constraint is possibly too restrictive and that the estimated Bayes factor may be noisy. You should either use a less-restrictive constraint or take more prior and posterior samples.
 #' 
 #' @md
 #' @export
@@ -237,12 +237,12 @@ testFunction_SDDR = function(priorEffects, postEffects, devianceFunction = NULL,
 #'   I_M0 = function(eff) {
 #'     all(abs(eff) < 2)
 #'   }
-#'   testFunction_encompassingPrior(priorEffects, postEffects, I_M0)
+#'   testFunction_EPA(priorEffects, postEffects, I_M0)
 #' }
 #' 
 #' testHypothesis(..., testFunction = curriedTestFun)
 #' }
-testFunction_encompassingPrior = function(priorEffects, postEffects, I_M0) {
+testFunction_EPA = function(priorEffects, postEffects, I_M0) {
 	
 	# Calculate the numerator: The average I_M0 for the posterior
 	post_sat = apply(postEffects, 1, I_M0)
@@ -256,7 +256,11 @@ testFunction_encompassingPrior = function(priorEffects, postEffects, I_M0) {
 	bf_01 = numerator / denominator #In favor of the constrained hypothesis/model
 	bf_10 = 1 / bf_01 # In favor of the general hypothesis/model
 	
-	list(bf01 = bf_01, bf10 = bf_10, prior_sat = denominator, post_sat = numerator)
+	res = list(success = TRUE, bf01 = bf_01, bf10 = bf_10, prior_satisfied = denominator, post_satisfied = numerator)
+	if (is.infinite(bf_01) || is.infinite(bf_10) || is.nan(bf_01) || is.na(bf_01)) {
+		res$success = FALSE
+	}
+	res
 }
 
 #' Create Encompassing Prior Interval Test Function
@@ -272,10 +276,10 @@ testFunction_encompassingPrior = function(priorEffects, postEffects, I_M0) {
 #' @export
 #' @examples
 #' \dontrun{
-#' tf = create_TF_EPInterval(-0.5, 0.5)
+#' tf = create_EPA_intervalTF(-0.5, 0.5)
 #' testHypothesis(prior, post, fact, "f", testFunction = tf)
 #' }
-create_TF_EPInterval = function(lower, upper) {
+create_EPA_intervalTF = function(lower, upper) {
 	
 	rval = local({
 		force(lower)
@@ -284,7 +288,7 @@ create_TF_EPInterval = function(lower, upper) {
 			I_M0 = function(eff) {
 				all(eff >= lower & eff <= upper)
 			}
-			testFunction_encompassingPrior(prior, post, I_M0)
+			testFunction_EPA(prior, post, I_M0)
 		}
 	})
 	
