@@ -7,11 +7,24 @@ bibliography: references.bib
 toc: yes
 ---
 
-```{r echo=FALSE}
-library(CMBBHT)
-```
+# Introduction
 
-# Version
+This package performs ANOVA-like Bayesian hypothesis tests for factorial designs for which cell means or differences between cells are estimated in a Bayesian model.
+
+You must have a factorial design, including single-factor designs, in which some dependent variable or model parameter is allowed to vary as a function of factor levels. Continuous independent variables are not supported.
+
+You must have samples from the prior and posterior distributions of the parameters of interest.
+
+This manual will first go through examples of some of the kinds of models that this package is designed to analyze. Then, basic usage of the package will be demonstrated. The steps of the procedure used to estimate Bayes factors are then shown. Finally, there are additional notes on how to use the package.
+
+## Disclaimer
+
+There are requirements for using this package that you as a user of this package need to be aware of. You are responsible for reading this manual and the referenced articles. A failure to do so means that your analyses may be very wrong.
+That said, the approaches used by this package are fairly general, so you are probably ok at the $p < 0.05$ threshold.
+
+In addition, none of this package has been peer-reviewed, although some parts of it are going through peer review.
+
+## Version
 
 This documentation is for version `r packageVersion("CMBBHT")` of this package. You can install this version of the package with the following two lines of code:
 
@@ -24,51 +37,22 @@ devtools::install_github("hardmanko/CMBBHT@v{{ver}}", build_vignettes = TRUE)',
 ```
 
 
-# Disclaimer
-
-There are requirements for using this package that you as a user of this package need to be aware of. You are responsible for reading the documentation and the referenced articles. A failure to do so means that your analyses may be very wrong.
-That said, the approaches used by this package are fairly general, so you are probably ok at the $p < 0.05$ threshold.
-
-In addition, none of this package has been peer-reviewed, although some parts of it are going through peer review.
-
-# Introduction
-
-This package performs ANOVA-like Bayesian hypothesis tests for factorial designs for which cell means or differences between cells are estimated in a Bayesian model.
-
-You must have a factorial design in which some dependent variable is allowed to vary as a function of factor levels. Continuous independent variables are not supported.
-
-You must have samples from the prior and posterior distributions of the parameters of interest.
-
-This manual will first go through examples of some of the kinds of models that this package is designed to analyze. Then, basic usage of the package will be demonstrated. The steps of the procedure used to estimate Bayes factors are then shown. Finally, there are additional notes on how to use the package.
-
-## Terminology
-
-There are two important terms that are used many times here that can be demonstrated with an example. A two-factor ANOVA model might be written (in part) as follows:
-$$
-\mu_{ij} = \mu + \alpha_i + \beta_j + \pi_{ij}
-$$
-Where the $\alpha$s and $\beta$s are main effect parameters and the $\pi$s are interaction parameters.
-
-**Cell mean**: Typically used to mean a parameter that estimates a cell mean or some measure of differences between cell means. In the ANOVA model, $\mu_{ij}$ estimates a cell mean.
-
-**Effect parameter**:  In the ANOVA model, the $\alpha$s, $\beta$s, and $\pi$s are _effect parameters_ as they are parameters related to a certain effect (a main effect or an interaction).
-
 # Example Models
 
 What follow are some examples of the kinds of models that you might have that you can use with this package. These examples are not meant to exclude other models.
 
-## Example 1: Basic cell means model {#example1}
+## Model 1: Basic Cell Means {#model1}
 
-You have a design with some number of factors that are crossed in some way to get cells of the design. In each cell of the design, you have some number of replicates/measurements of some dependent variable. Your model estimates the mean of each cell of the design. What follows is a concrete example of such a model, not a specification of what your model must be.
+In this model, the design has some number of factors that are crossed in some way to get cells of the design. In each cell of the design, you have some number of replicates/measurements of some dependent variable. The model estimates the mean of each cell of the design. What follows is an example of a model for such a design, not a specification of what your model must be.
 
-
-In each cell, $i$, there are $K$ replicates of observed data, $y_{ik}$. They follow a normal distribution with a mean that is estimated in each cell, $\mu_i$, and a data variance, $\sigma^2_y$.
+In the $i$th cell of the design, there are $K$ replicates of observed data, $y_{ik}$. They follow a normal distribution with a mean that is estimated in each cell, $\mu_i$, and a single, shared data variance, $\sigma^2_y$. The factorial nature of the design is ignored in this model specification, instead just treating each combination of factor levels as one cell of the design.
 
 $$
 y_{ik} \sim \text{Normal}(\mu_i, \sigma^2_y)
 $$
 
 The cell means, $\mu_i$, and the data variance, $\sigma^2_y$, each have some fixed prior.
+
 $$ 
 \begin{aligned}
 \mu_i &\sim \text{Normal}(0, 10^4) \\
@@ -76,90 +60,101 @@ $$
 \end{aligned} 
 $$
 
+This design is possibly workable, but it has the issue that the prior on the cell means is uninformative. The problem with uninformative priors is discussed further in the [Effect of Uninformative Priors](#uninformativePrior) section. I prefer the structure of the next model, which is able to place moderately informative priors on the quantities of interest, which are typically the differences between cells rather than the means of the cells themselves.
 
-This design is possibly workable, but it has the issue that the prior on the cell means is uninformative. The problem with uninformative priors is discussed further [here](#uninformativePrior). I prefer the design in the next example, which is able to place informative priors on the quantities of interest.
 
+## Model 2: Grand Mean plus Cell Effects {#model2}
 
-## Example 2: Grand mean plus Cell Offsets/Differences/Effects {#example2}
+In this model, the data are the same as in Model 1. The model estimates a grand mean/intercept, $\mu$, (the interpretation of $\mu$ depends on other choices) and a cell effect, $\delta_i$, for each cell. To get the mean for each cell, you add the cell effect to the grand mean/intercept. 
 
-In this example, the data are the same as in Example 1. The model estimates a grand mean/intercept, $\mu$, (the interpretation of $\mu$ depends on other choices) and a cell effect, $\alpha_i$, for each cell. To get the mean for each cell, you add the cell effect to the grand mean/intercept. 
-
-At the data level, this model is the same as in Example 1.
+At the data level, this model is the same as in Model 1.
 
 $$
-y_i \sim \text{Normal}(\mu_i, \sigma^2_y)
+y_{ik} \sim \text{Normal}(\mu_i, \sigma^2_y)
 $$
 
-Now each cell mean is the sum of the intercept, $\mu$, and the cell effect, $\alpha_i$.
+Now each cell mean is the sum of the intercept, $\mu$, and the cell effect, $\delta_i$.
 $$
 \begin{aligned}
-\mu_i &= \mu + \alpha_i \\
+\mu_i &= \mu + \delta_i \\
 \mu &\sim \text{Normal}(0, 10^4) \\
-\alpha_i &\sim \text{Normal}(0, 2) \\
+\delta_i &\sim \text{Normal}(0, 2) \\
 \sigma^2_y &\sim \text{Inverse Gamma}(0.1, 0.1)
 \end{aligned}
 $$
 
+In this case, you can use the cell effects ($\delta$s) for analysis, ignoring the intercept. This model has an advantage over the basic cell means model in that you can place an uninformative prior on the grand mean, which means that you don't need to guess the approximate magnitude of the mean of the data. You can, however, place reasonably informative priors on the $\delta$s. The informativeness of the priors on the $\delta$s are effectively your prior beliefs about how large the differences between the cells are likely to be.
 
-In this case, you can use the cell effects ($\alpha$s) for analysis, ignoring the intercept. This model has an advantage over the basic cell means model in that you can place an uninformative prior on the grand mean, which means that you don't need to guess the approximate magnitude of the mean of the data. You can, however, place reasonably informative priors on the $\alpha$s. The informativeness of the priors on the $\alpha$s are effectively your prior beliefs about how large the differences between the cells are likely to be.
-
-Note that some constraint on the $\alpha$s is required for this model to be identifiable, otherwise the mean of the $\alpha$s and the value of $\mu$ will trade off. I like to use a cornerstone parameterization in which one of the $\alpha$s is set to 0. In that case, $\mu$ is an intercept. You could also use a sums-to-zero constraint, in which case $\mu$ is a grand mean, or some other constraint.
+Note that some constraint on the $\delta$s is required for this model to be identifiable, otherwise the mean of the $\delta$s and the value of $\mu$ will trade off. I like to use a cornerstone parameterization in which one of the $\delta$s is set to 0. In that case, $\mu$ is an intercept. You could also use a sums-to-zero constraint, in which case $\mu$ is a grand mean.
 
 With a cornerstone parameterization, you are essentially changing the model as follows:
 $$
 \begin{aligned}
-\alpha_1 &\sim \text{Normal}(0, 0) ~\text{(i.e. a point mass at 0.)} \\
-\alpha_i &\sim \text{Normal}(0, 2), i \neq 1
+\delta_1 &\sim \text{Normal}(0, 0) ~\text{(i.e. a point mass at 0.)} \\
+\delta_i &\sim \text{Normal}(0, 2), ~i \neq 1
 \end{aligned}
 $$
 
-Thus, different $\alpha$s have different priors. I see no problem with this, you just have to be careful that when you sample from the priors on the $\alpha$s that you account for the different priors. Note that you do not need to use 1 as the cornerstone condition. I have found that using the cell with the most data, if there is one, works the best.
+Thus, different $\delta$s have different priors. I see no problem with this, you just have to be careful that when you sample from the priors on the $\delta$s that you account for the different priors. Note that you do not need to use 1 as the cornerstone condition. I have found that using the cell with the most data, if there is one, works the best.
 
-I typically use a model like this with a cornerstone parameterization and it usually works well. Part of the value of this package is that it allows you to use a simple model like this one, that is not parameterized in terms of main effects and interactions, but after estimating the cell effects, $\alpha_i$, you can test whether main effects or interactions are present.
+I typically use a model like this with a cornerstone parameterization and it usually works well. Part of the value of this package is that it allows you to use a simple model like this one, that is not parameterized in terms of main effects and interactions, but after estimating the cell effects, $\delta_i$, you can test whether main effects or interactions are present.
 
-## Example 3: Full ANOVA Effects Model {#example3}
+## Model 3: Full ANOVA Effects Model {#model3}
 
-In this example, you have the same data as [Example 1](#example1). let's say that you have two factors called A and B. Your model estimates a grand mean ($\mu$), a main effect of A ($\alpha_i$), a main effect of B ($\beta_j$), and the interaction between A and B ($\pi$).
+This model uses the same data as [Model 1](#model1). While Model 1 ignored the factorial nature of the design, this model explicitly includes the factors. Assume that you have two factors called A and B. The model estimates a grand mean ($\mu$), a main effect of A ($\alpha_i$), a main effect of B ($\beta_j$), and the interaction between A and B ($\pi_{ij}$).
 
-The data level is the same: $y_i \sim \text{Normal}(\mu_i, \sigma^2_y)$
+The data level is the same as the previous models
 
-The cell mean is calculated with: $\mu_i = \mu + \alpha_i + \beta_j + \pi_{ij}$
+$$
+y_{ik} \sim \text{Normal}(\mu_i, \sigma^2_y)
+$$
+
+The cell mean is calculated with
+$$
+\mu_i = \mu + \alpha_i + \beta_j + \pi_{ij}
+$$
+
+which is like the standard setup for two-factor ANOVA.
 
 The components of the cell mean have the following priors.
 $$
 \begin{aligned}
 \mu &\sim \text{Normal}(0, 10^4) \\
 \alpha_i &\sim \text{Normal}(0, 2) \\
-\beta_j &\sim \text{Normal}(0, 2) \\
-\pi_{ij} &\sim \text{Normal}(0, 2) \\
+\beta_j &\sim \text{Normal}(0, 4) \\
+\pi_{ij} &\sim \text{Normal}(0, 1) \\
 \sigma^2_y &\sim \text{Inverse Gamma}(0.1, 0.1)
 \end{aligned}
 $$
 
 Notice how this model specification allows for informative priors on the effect parameters ($\alpha$, $\beta$, and $\pi$) while allowing for an uninformative prior on the grand mean, $\mu$.
 
-If you have a model like this, you should be able to use this package fairly easily. Rather than using cell means for your analysis, you can directly use your estimates of the effect parameters, $\alpha$, $\beta$, and $\pi$. To test hypotheses about the existence of effects, you can pass the prior and posterior effect parameters to `testFunction_SDDR` or `testFunction_encompassingPriors`. This will make more sense once you read farther.
+A major advantage of a model of this kind over Model 2 is that it is possible to place different priors on the different effects, which allows you to state the prior expectation that you are looking for different sized effects of different factors. In this model, the prior on $\alpha_i$ is narrower than the prior on $\beta_j$, indicating that a smaller effect of the $\alpha$ factor is expected than of the $\beta$ factor. In addition, the prior on the interations terms, $pi_{ij}$, is the narrowest, indicating that the prior belief is that an interaction, if there is one, will be small.
 
-Note that like [Example 2](#example2), you must provide some constraints on the effect parameters in order for this model to be identifiable. This gets complicated when you have multiple factors so I won't go into it. I don't typically parameterize my models like this because of the complexity of constraining the effect parameters. 
+If you have a model like this, you should be able to use this package fairly easily. Rather than using cell means for your analysis, you can directly use your estimates of the effect parameters, $\alpha$, $\beta$, and $\pi$. To test hypotheses about the existence of effects, you can pass the prior and posterior effect parameters to `testFunction_SDDR` or `testFunction_EPA`. This should make more sense once you read farther.
 
-## Example 4: A Complex Model
+Note that like [Model 2](#model2), you must provide some constraints on the effect parameters in order for this model to be identifiable. This gets complicated when you have multiple factors so I won't go into it. I don't typically parameterize my models like this because of the complexity of constraining the effect parameters. In my experience, hierarchical constraint is dead on arrival, so don't bother trying. You need a hard constraint, not a soft constraint.
 
-For all of the examples so far, you might be wondering why I didn't just use the `BayesFactor` package. For all of those examples, you should just use the `BayesFactor` package. Where this package becomes useful is when your model is complex and there is a fair degree of separation between the parameters and the data. An example of such a model was used by @HardmanVergauweRicker2017. In that model, the data are distributed as a mixture of various distributions. If we are interested in a parameter $\phi$, a version of the model that leaves a lot out is something like
+## Model 4: A Complex Model
+
+For all of the models so far, you might be wondering why I didn't just use the `BayesFactor` package. For all of those models, you should just use the `BayesFactor` package. Where this package becomes useful is when your model is complex and there is a fair degree of separation between the parameters and the data. An example of such a model was used by @HardmanVergauweRicker2017. In that model, the data are distributed as a mixture of various distributions. If we are interested in a parameter $\phi$, a version of the model that leaves a lot out is something like
+
 $$ 
 \begin{aligned}
 p(y_{ij} | \phi_{ij}, \theta) &= \sum_k p_k f_k( \phi_{ij}, \theta ) \\
 \phi_{ij} &= T(\phi_i + \phi_j) \\
 \phi_i &\sim \text{Normal}(\mu_\phi, \sigma^2_\phi) \\
-\phi_j &\sim \text{Cauchy}(0, 3)
+\phi_j &\sim \text{Cauchy}(0, 2)
 \end{aligned} 
 $$
+
 Where $y_{ij}$ are the data for the $i$th participant in the $j$th task condition, $\phi_{ij}$ is a parameter of interest, $\theta$ are a bunch of other parameters, and $p_k$ and $f_k$ are mixture weights and density functions for the $k$th component of the model. $\phi_{ij}$, unfortunately, is some nonlinear transformation, $T()$, of the sum of a participant effect, $\phi_i$, and an effect of task condition, $\phi_j$.
 
-Inference is focused on the effect of task condition, $\phi_j$. That is where this package shines: It can test whether $\phi_j$ varies with task condition. All it needs are the prior and posterior samples of $\phi_j$. Models like this are why I wrote this package.
+Inference is focused on the effect of task condition, $\phi_j$. That is where this package shines: It can test whether $\phi_j$ varies with task condition without worrying about the whole structure of the model. All it needs are the prior and posterior samples of $\phi_j$. Models like this are why I wrote this package.
 
 # Basic Usage
 
-I will work with a model like in [Example 2](#example2). In that model, differences from a cornerstone condition are estimated with $\alpha_i$ parameters. I will use a design with two factors, called `let` and `num`. The `let` factor has three levels, `a`, `b`, and `c`. The `num` factor has two levels, `1` and `2`. The design is fully crossed.
+I will work with a model like [Model 2](#model2). In that model, differences from a cornerstone condition are estimated with cell effect parameters, $\delta_i$. I will use a design with two factors, called `let` and `num`. The `let` factor has three levels, `a`, `b`, and `c`. The `num` factor has two levels, `1` and `2`. The design is fully crossed.
 
 One of the things that you will need in order to use this package is a `data.frame` that contains the factor levels. Each column is a factor and each row contains a combination of factor levels that define a cell of the design. Note that factor names and factor levels may not contain period (".") or colon (":"). The following code creates the `factors` `data.frame` for future use.
 
@@ -172,38 +167,38 @@ factors = data.frame(
 
 
 ```{r echo=FALSE}
-ex2_getAlphas = function(mus, posteriorSD = 1, priorMu = 0, priorSD = 3, cornerstone = 1, samples = 10000) {
+ex2_getDeltas = function(mus, posteriorSD = 1, priorMu = 0, priorSD = 3, cornerstone = 1, samples = 10000) {
 	
 	mus = mus - mus[cornerstone]
 	
-	priorCMs = postCMs = matrix(0, nrow = samples, ncol=length(mus))
+	priorDelta = postDelta = matrix(0, nrow = samples, ncol=length(mus))
 	
-	for (i in 1:ncol(postCMs)) {
+	for (i in 1:ncol(postDelta)) {
 		if (i != cornerstone) {
-			priorCMs[,i] = rnorm(nrow(priorCMs), priorMu, priorSD)
-			postCMs[,i] = rnorm(nrow(postCMs), mus[i], posteriorSD)
+			priorDelta[,i] = rnorm(nrow(priorDelta), priorMu, priorSD)
+			postDelta[,i] = rnorm(nrow(postDelta), mus[i], posteriorSD)
 		}
 	}
 	
-	list(prior = priorCMs, post = postCMs)
+	list(prior = priorDelta, post = postDelta)
 }
 ```
 
-Imagine that the cell means are 2 through 7 and that `ex2_getAlphas` samples from the prior and posterior distributions of the $\alpha$ parameters.
+Imagine that the cell means are 2 through 7 and that `ex2_getDeltas` takes samples from the prior and posterior distributions of the $\delta_i$ parameters.
 
 ```{r}
 # Corresponds to the rows of factors
 mus = c( 2,3,   4,5,   6,7 )
 
 set.seed(143)
-cms = ex2_getAlphas(mus)
+deltas = ex2_getDeltas(mus)
 ```
 
-`cms` contains two matrices, `prior` and `post`, each of which has 6 columns, each corresponding to an $\alpha$ parameter and `r nrow(cms$post)` rows, each being a sample from the prior or posterior. Note that the order of the columns of cell means/effects must correspond to the rows of `factors`.
+`deltas` contains two matrices, `prior` and `post`, each of which has 6 columns, each corresponding to an $\delta$ parameter and `r nrow(deltas$post)` rows, each being a sample from the prior or posterior. Note that the order of the columns of the cell effects must correspond to the rows of `factors`.
 
 ```{r}
-names(cms)
-dim(cms$post)
+names(deltas)
+dim(deltas$post)
 ```
 
 A plot the effect parameters with 95\% credible intervals will help with understanding what effects are present in the data.
@@ -214,17 +209,17 @@ library(LineChart)
 
 #Put the data into a data.frame for plotting
 cmdf = NULL
-for (i in 1:ncol(cms$post)) {
-	temp = data.frame(let = factors$let[i], num = factors$num[i], alpha = cms$post[,i])
+for (i in 1:ncol(deltas$post)) {
+	temp = data.frame(let = factors$let[i], num = factors$num[i], alpha = deltas$post[,i])
 	cmdf = rbind(cmdf, temp)
 }
 
-errBarFun = function(x) {
+credInt = function(x) {
 	list(eb = quantile(x, c(0.025, 0.975)),
 			 includesCenter = TRUE)
 }
 
-lineChart(alpha ~ let * num, cmdf, errBarType = errBarFun)
+lineChart(alpha ~ let * num, cmdf, errBarType = credInt)
 
 ```
 
@@ -238,26 +233,33 @@ From looking at this plot, it seems like:
 Let's test these hypotheses. First, the main effect of letters. To test this hypothesis, pass the prior and posterior cell means, the `factors` `data.frame`, and the effect to test, `"let"`, to `testHypothesis`.
 
 ```{r}
-testHypothesis(cms$prior, cms$post, factors, "let")
+library(CMBBHT)
+
+testHypothesis(deltas$prior, deltas$post, factors, "let")
 ```
-With default settings, this returns a list with four elements. As long as `success` is `TRUE`, we can examine `bf10`, which is the Bayes factor in favor of the hypothesis that there is a main effect of the `let` factor. This Bayes factor is substantial, so there is a main effect of `let`.
+With default settings, this returns a list with results from the test. As long as `success` is `TRUE`, we can examine `bf10`, which is the Bayes factor in favor of the hypothesis that there is a main effect of the `let` factor. This Bayes factor is far above 1, so there is evidence for a main effect of `let`.
 
 The test of the main effect of `num` proceeds in the same way.
 ```{r}
-ht = testHypothesis(cms$prior, cms$post, factors, "num")
+ht = testHypothesis(deltas$prior, deltas$post, factors, "num")
 ht$bf10
 ```
 This Bayes factor is ambiguous as it is near 1. This fits with how the figure looks.
 
-For the interaction, you provide a vector of the names of the factors in the interaction.
+For the interaction, you provide the names of the factors in the interaction with a colon (":") between factor names.
 ```{r}
-ht = testHypothesis(cms$prior, cms$post, factors, c("let", "num"))
+ht = testHypothesis(deltas$prior, deltas$post, factors, "let:num")
 ht$bf10
 ```
 This Bayes factor favors the null as it is well below 1, so there is no interaction. Again, this fits with the figure.
 
 This concludes basic use of the package. With just a little setup and one function call, you are able to test hypotheses about main effects or interactions. This package, however, has more to offer, as I describe in the following sections.
 
+For an in-depth tutorial that gives a concrete example of model specification and fitting, and generally provides more information about how to use this package in practice, see the `BinomialTutorial` vignette that comes with this package. Once the package has been installed, you can open it with
+```{r eval=FALSE}
+vignette("BinomialTutorial", package="CMBBHT")
+```
+or you can download it from the GitHub repository.
 
 # Steps of the procedure
 
@@ -267,14 +269,14 @@ I am going to perform a test of the hypothesis that there is a main effect of th
 
 ## Effect Parameters
 
-You can calculate matrices of effect parameters given cell means/differences and the `factors` `data.frame` with the function `getEffectParameters`. Here I calculate the posterior effects for the main effect of the `let` factor. 
+You can calculate matrices of effect parameters given cell means/differences and the `factors` `data.frame` with the function `getEffectParameters`. Here I calculate the posterior effects for the main effect of the `let` factor. A number of steps happen in `getEffectParameters`, but those steps are not important to understanding the concept of how the hypothesis testing procedure works, so I will skip them. The process is mechanical and not controversial. 
 
 ```{r}
-post_eff = getEffectParameters(cms$post, factors, "let")
+post_eff = getEffectParameters(deltas$post, factors, "let")
 post_eff[1:5,]
 ```
 
-A number of steps happen in `getEffectParameters`, but those steps are not important to understanding the concept of how the hypothesis testing procedure works, so I will skip them. The process is mechanical and not controversial. 
+Each column of `post_eff` corresponds to one ANOVA effect parameters. These effect parameters were calculated with a sums-to-zero constraint, which can be verified observing that each row (sample) sums to 0. These effect parameters can be interpreted as the difference from the grand mean to each cell mean. From the plot of cell means above, it is clear that the `a` level of `let` has a lower value than average and that the `c` level of `let` has a higher value than average. This is captured by the effect parameters in `post_eff`.
 
 Again, if there is no main effect, there should be no difference between the levels of the `let` factor and the effect parameters should be near 0. One informal way of answering this question is to examine values of the effect parameters.
 
@@ -293,14 +295,13 @@ plotEffectParameterSummary(summary)
 
 As you can see, there appears to be a main effect because the effect parameters are reasonably far from one another, relative to their credible intervals.
 
-If you don't like Bayes factors as a method of inference, you can still get something out of this package by using summaries of the posterior effect parameters. Alternately, you can group posterior effects with pairwise comparisons with `groupEffectParameters`
+If you don't like Bayes factors as a method of inference, you can still get something out of this package by using summaries of the posterior effect parameters. In addition, you can group posterior effects with pairwise comparisons with `groupEffectParameters`, which gives results that are conceptually similar to, e.g., the Tukey HSD procedure. By default, `groupEffectParameters` uses credible intervals of the difference between effect parameters to group the effects. You can alternately set it to use Bayes factors.
 
 ```{r}
 groupEffectParameters(post_eff)
 ```
 
-By default, `groupEffectParameters` uses credible intervals of the difference between effect parameters to group the effects. You can alternately set it to use Bayes factors.
-
+Factor levels that share a grouping letter are indistinguishable. That none of the factor levels shared a letter indicates that they are all distinguishable. Thus, this grouping of effect parameters agrees with the hypothesis test that was done earlier, namely that there is a main effect.
 
 
 ## Deviance Measure
@@ -319,7 +320,7 @@ post_D = apply(post_eff, 1, var)
 We can do the same for the prior effects and plot the prior and posterior $D$s.
 
 ```{r fig.width=4, fig.height=4}
-prior_eff = getEffectParameters(cms$prior, factors, "let")
+prior_eff = getEffectParameters(deltas$prior, factors, "let")
 
 prior_D = apply(prior_eff, 1, var)
 
@@ -334,32 +335,60 @@ xs = seq(0, max(post_D), length.out=100)
 plot(xs, estimateDDens(post_D, xs), type='l', ylim=c(0, 0.3),
 		 xlab="D", ylab="Density")
 lines(xs, estimateDDens(prior_D, xs), col="green")
+legend("topright", legend = c("prior", "post"), lty=1, col=c("green", "black"))
 ```
 
-The posterior is black and the prior is green. As you can see from the plot, there is much more prior density at 0 than posterior density at 0. 
+As you can see from the plot, there is much more prior density at 0 than posterior density at 0. 
 
 Under the null hypothesis, the effect parameters are close to one another and $D$ is consequently near 0. 
 If there is more posterior density at 0 than prior density, it suggests that in the posterior the effect parameters are more clustered than the prior effect parameters, which is evidence in favor of the null hypothesis. 
 If there is less posterior density at 0 than prior density, it suggests that the posterior effect parameters are more spread out than in the prior, which is evidence in favor of the alternative hypothesis.
-This is the basic logic of the Savage-Dickey density ratio.
+This is the basic logic of the Savage-Dickey density ratio, which will be discussed further.
+
+### Priors on Functions of Parameters
+
+The deviance parameter, $D$, is a function of the effect parameters.
+An important piece of logic that allows the prior on $D$ to be known is that the prior on some function of model parameters is that function of the prior on the parameters.
+
+For example, imagine that a model has two parameters, $\alpha$ and $\beta$ with the following priors.
+
+$$
+\alpha \sim \text{Normal}(3, 4) \\
+\beta \sim \text{Normal}(7, 2)
+$$
+
+Imagine that there is a parameter $\gamma$ that is equal to the sum of $\alpha$ and $\beta$. I define the function $F$ for notational purposes.
+
+$$
+F(x, y) = x + y \\
+\gamma = F(\alpha, \beta)
+$$
+In the prior, $\alpha$ and $\beta$ are indpendent.
+It is known analytically that the sum of two independent normal random variables is a normal random variable with mean equal to the sum of the means and variance equal to the sum of the variances. Thus, the prior on $\gamma$ is
+
+$$
+\gamma \sim \text{Normal}(10, 6)
+$$
+This basic logic holds for any function $F$ (including $F$ of any number of arguments), which allows for the prior on $D$ to be known. In practical terms, as long as the same function is applied to samples from the prior and posterior, the prior will be correct. It is not neccessary for the prior to be known analytically.
 
 ## Bayes Factor Estimation with Savage-Dickey
 
-By default, the Bayes factor is estimated using the Savage-Dickey Density Ratio (SDDR) as suggested by @WagenmakersEtAl2010. The SDDR is used to test point hypotheses about parameter values. The Bayes factor in favor of the hypothesis that some parameter $\phi = 0$ is equal, under certain conditions, to the ratio of the posterior density of $\phi$ at 0 to the prior density of $\phi$ at 0.
+By default, CMBBHT estimates Bayes factors using the Savage-Dickey Density Ratio (SDDR) as suggested by @WagenmakersEtAl2010. The SDDR is used to test point hypotheses about parameter values. The Bayes factor in favor of the hypothesis that some parameter $\phi = 0$ is equal, under certain conditions, to the ratio of the posterior density of $\phi$ at 0 to the prior density of $\phi$ at 0.
 
-There are some limitations for the use of the SDDR which are discussed by @WagenmakersEtAl2010 so I will not reiterate them here. The SDDR is fairly general, so it is likely fine to use.
+There are some limitations for the use of the SDDR which are discussed by @WagenmakersEtAl2010 so I will not reiterate them here. The SDDR is fairly general, so it is likely fine to use for your use case.
 
 The following code snippet calculates the SDDR for the deviance parameter, $D$.
 
 ```{r}
 library(polspline)
 
-# Estimating posterior density at 0
-post_ls = logspline(post_D, lbound=0)
-post_dens = dlogspline(0, post_ls)
-
+# Estimate prior density at 0
 prior_ls = logspline(prior_D, lbound=0)
 prior_dens = dlogspline(0, prior_ls)
+
+# Estimate posterior density at 0
+post_ls = logspline(post_D, lbound=0)
+post_dens = dlogspline(0, post_ls)
 
 # Calculate Bayes factors with the SDDR
 bf_01 = post_dens / prior_dens
@@ -369,7 +398,7 @@ bf_01 # BF that D = 0 and there is no effect
 bf_10 # BF that D =/= 0 and there is an effect
 ```
 
-With some extra details to make it more robust to priors with thick tails (like the Cauchy), the last few steps are done by the following function call:
+With some extra details to make it more robust when using priors with thick tails (like the Cauchy), the last few steps are done by the following function call:
 
 ```{r}
 testFunction_SDDR(prior_eff, post_eff)
@@ -382,7 +411,7 @@ See [this section](#densityEstimationProblems) for issues that can arise with th
 If you read this section, you now have an idea about the basic logic of how this package works. The steps shown here are all performed by the following function call.
 
 ```{r}
-ht = testHypothesis(cms$prior, cms$post, factors, "let")
+ht = testHypothesis(deltas$prior, deltas$post, factors, "let")
 ht$bf10
 ```
 
@@ -397,19 +426,19 @@ Hardman, K.O. (2017). CMBBHT: Cell Means Based Bayesian Hypothesis Tests (Versio
 
 Make sure that the version number is correct in both the name and the URL.
 
-## The Effect of Uninformative Priors {#uninformativePrior}
+## Effect of Uninformative Priors {#uninformativePrior}
 
-This section uses the [Example 1](#example1) model, the basic cell means model.
-You can use the cell means for some analyses, but the priors on the cell means as in Example 1 are problematic in that kind of design. The issue is that when you directly estimate cell means, a general model must have fairly uninformative priors to the cell means in order to deal with the fact that the model does not know the approximate magnitude of the cell means. In the example, the prior variance on $\mu_i$ is 10,000 to account for the fact that $\mu$ can have very different magnitudes. This is a very uninformative prior.
+This section uses [Model 1](#model1), the basic cell means model.
+You can use the cell means for some analyses, but the priors on the cell means as in Model 1 are problematic in that kind of design. The issue is that when you directly estimate cell means, a fully general model should have fairly uninformative priors to the cell means in order to deal with the fact that the model does not know the approximate magnitude of the cell means. In the specification of Model 1, the prior variance on $\mu_i$ was set to 10,000 to account for the fact that $\mu$ can have very different magnitudes depending on the data. This is a very uninformative prior.
 
-To get useful Bayes factors, you should not have uninformative priors on the quantities of interest (cell means or cell effects). The logic goes as follows: An uninformative prior on cell-mean-like parameters is typically some kind of very wide almost uniform distribution. This puts excessive mass on values that are profoundly unlikely. The posterior is very unlikely to be as extreme (in aggregate) as the prior. An important step in this method is to measure the dispersion of the prior and posterior effect parameters. If the prior is extremely dispersed, the posterior is likely to be less dispersed than the prior. A hypothesis test might conclude that the posterior is less dispersed than the prior, which is evidence that there is no effect. Thus, uninformative priors result in a situation in which it is relatively easy to find evidence in favor of the null hypothesis.
+To get useful Bayes factors, you should not have uninformative priors on the quantities of interest (cell means or cell effects). The logic goes as follows: An uninformative prior on cell-mean-like parameters is typically some kind of very wide almost uniform distribution. This puts excessive mass on values that are profoundly unlikely. The posterior is very unlikely to be as extreme (in aggregate) as the prior. An important step in this method is to measure the dispersion, $D$, of the prior and posterior effect parameters. If the prior is extremely dispersed, the posterior is likely to be less dispersed than the prior. A hypothesis test might conclude that the posterior is less dispersed than the prior, which is evidence that there is no effect. Thus, uninformative priors result in a situation in which there is a bias toward finding evidence in favor of the null hypothesis.
 
-If you use prior knowledge about the approximate magnitude of the cell means, you do not need priors that are particularly uninformative, but it requires that you know the approximate magnitude of the means (if you do know, this is a legitimate use of prior knowledge). Note that if you do set the priors on cell means to be informative, you should use the same location/mean for the prior on each cell mean. The reason is that if you "guess" that there is a main effect or interaction by using different locations for different cells, then you are effectively building that effect into the prior. Thus, the null hypothesis would be not that there is no effect, but that there is a specific effect.
+If you use prior knowledge about the approximate magnitude of the cell means, you do not need priors that are particularly uninformative, but it requires that you know the approximate magnitude of the means (if you do know, this is a legitimate use of prior knowledge and you should absolutely use that information). By setting the prior means to have approximately the same magnitude, you can set the prior variances to moderately informative values without sacrificing the accuracy of parameter estimation.
 
 The code below demonstrates what happens with more and less informative priors on cell means. It uses a case where the means of the 4 cells of the design are 0, 1, 2, and 3. 
 
 ```{r}
-ex1_getCMs = function(mus, posteriorSD = 1, priorMu = 0, priorSD = 3, samples = 10000) {
+ex1_getCMs = function(mus, posteriorSD = 1, priorMu = 0, priorSD = 3, samples = 1e5) {
 	
 	if (length(priorMu) == 1) {
 		priorMu = rep(priorMu, length(mus))
@@ -454,57 +483,68 @@ dens20 = estimateDDens(prior_D_20, 0)
 
 points(0, dens5, pch=16)
 points(0, dens20, pch=16, col="green")
+
+legend("topright", legend = c("SD = 5", "SD = 20"), lty=1, col=c("black", "green"))
 ```
 
-A prior SD of 5 is black and a prior SD of 20 is green. As you can see, changing the informativeness of the prior has substantially changed the distribution of $D$. It has especially affected the density at 0, with the ratio `dens5 / dens20 = ` `r dens5 / dens20`.
+A prior SD of 5 is black and a prior SD of 20 is green. As you can see, changing the informativeness of the prior has substantially changed the distribution of $D$. It has especially affected the density at 0, with the ratio `dens5 / dens20 = ` `r round(dens5 / dens20, 3)`. When the prior SD is very high, the prior density at 0 is tiny. Even if the posterior distribution of $D$ is not at 0, it is easily possible for the posterior density of $D$ at 0 to be higher than the prior density of $D$ at 0 when the prior SD is high. If the prior density at 0 is less than the posterior density, that is evidence in favor of the null hypothesis under the logic of the SDDR.
 
+One additional unfortunate effect of lowered density at 0 is that accurate estimation of that density is more difficult as there is less local data on which to base the density estimate.
+
+### Adding Effects to Priors
+
+Note that if you do set the priors on cell means to be moderately informative, you should use the same location/mean for the prior on each cell mean. The reason is that if you "guess" that there is a main effect or interaction by using different locations for different cells, then you are effectively building that effect into the prior. Thus, the null hypothesis would be not that there is no effect, but that there is a specific effect.
 
 The following code shows what happens when you build an effect into the prior. There is a main effect, but it is the same main effect as in the prior, so the evidence is in favor of the null.
+```{r include=FALSE}
+set.seed(543)
+```
 ```{r}
 cm1_h1_builtIn = ex1_getCMs(mus, priorMu = mus, priorSD = 3, posteriorSD = 1)
-testHypothesis(cm1_h1_builtIn$prior, cm1_h1_builtIn$post, fact, "f")
+ht = testHypothesis(cm1_h1_builtIn$prior, cm1_h1_builtIn$post, fact, "f")
+ht$bf01
 ```
 
-Due to the issues with the basic cell means model, I prefer the [Example 2](#example2) model or one like it. Even then, you still need to use reasonably informative priors on the cell differences, $\alpha_i$.
+Due to the issues with the basic cell means model, I prefer the [Model 2](#model2) model or one like it. Even then, you still need to use reasonably informative priors on the cell effects, $\delta_i$.
 
 ## Hierarchical Models
 
-One example of a case that is a little complicated is when a parameter has an estimated prior as in a hierarchical model. For a model like in [Example 2](#example2), it seems reasonable to place a hierarchical prior on the cell effects ($\alpha$s in that model) to constrain them. For example, imagine that the prior on $\alpha_i$ is changed as follows:
+One example of a case that is a little complicated is when a parameter has an estimated prior as in a hierarchical model. For a model like in [Model 2](#model2), it seems reasonable to place a hierarchical prior on the cell effects ($\delta$s in that model) to constrain them. For example, imagine that the prior on $\delta_i$ is changed as follows:
 $$
 \begin{aligned}
-\alpha_i &\sim \text{normal}(0, \sigma^2_\alpha) \\
-\sigma^2_\alpha &\sim \text{Inverse Gamma}(6, 10)
+\delta_i &\sim \text{normal}(0, \sigma^2_\delta) \\
+\sigma^2_\delta &\sim \text{Inverse Gamma}(6, 10)
 \end{aligned}
 $$
 There are two things to be aware of with this setup:
 
-First, the prior on $\alpha_i$ is based on prior values of $\sigma^2_\alpha$, not posterior values. To sample from the prior on $\alpha_i$, you first sample from the prior on $\sigma^2_\alpha$ and then sample from the normal prior on $\alpha_i$ given the prior samples of $\sigma^2_\alpha$. This is illustrated in the following code snippet.
+First, the prior on $\delta_i$ is based on prior values of $\sigma^2_\delta$, not posterior values of $\sigma^2_\delta$. To sample from the prior on $\delta_i$, you first sample from the prior on $\sigma^2_\delta$ and then sample from the normal prior on $\delta_i$ given the prior samples of $\sigma^2_\delta$. This is illustrated in the following code snippet.
 
 ```{r}
-# Sample from the prior on s2_alpha
-s2_alpha_0 = MCMCpack::rinvgamma(1000, 6, 10)
+# Sample from the prior on s2_delta
+prior_s2_delta = MCMCpack::rinvgamma(1000, 6, 10)
 
-# Sample form the prior on alpha_i
-alpha_i_0 = rnorm(1000, 0, sqrt(s2_alpha_0))
+# Sample form the prior on delta_i
+prior_delta_i = rnorm(1000, 0, sqrt(prior_s2_delta))
 ```
 
-Secondly, the prior on $\sigma^2_\alpha$ should be such that the normal prior on $\alpha_i$ is reasonably informative. The choices of 6 and 10 for the parameters of the inverse gamma result in a mean $\sigma^2_\alpha$ of 10 / (6 - 1) = 2 and fairly low variance, as can be seen in the left histogram below.
+Secondly, the prior on $\sigma^2_\delta$ should be such that the normal prior on $\delta_i$ is reasonably informative. The choices of 6 and 10 for the parameters of the inverse gamma result in a mean $\sigma^2_\delta$ of 10 / (6 - 1) = 2 and fairly low variance, as can be seen in the left histogram below.
 
 ```{r fig.width=6, fig.height=3}
-par(mfrow=c(1,2))
-hist(s2_alpha_0, main="")
-hist(alpha_i_0, main="")
+par(mfrow=c(1,2), mar=c(4, 4, 0.5, 0.5))
+hist(prior_s2_delta, main="", prob=TRUE)
+hist(prior_delta_i, main="", prob=TRUE)
 ```
 
-As a result, the prior on $\alpha_i$, on the right, is fairly informative, which is typically good.
-[As was discussed](#uninformativePrior), uninformative priors are problematic for obtaining useful Bayes factors. You should try to choose reasonably informative priors even in the more complex hierarchical settings.
+As a result, the prior on $\delta_i$, on the right, is moderately informative.
+[As was discussed](#uninformativePrior), uninformative priors are problematic for obtaining useful Bayes factors. You should try to choose reasonably informative priors even in hierarchical settings.
 
 
-## Encompassing Priors Approach {#encompassingPriors}
+## Encompassing Prior Approach {#encompassingPrior}
 
-@WetzelsGrasmanWagenmakers2010 suggest a different method of estimating the Bayes factor than the Savage-Dickey Density Ratio. Essentially, it works nicely for interval tests and other non-point hypotheses. In addition, it does not require point density estimation, which is advantageous.
+@WetzelsGrasmanWagenmakers2010 suggest a different method of estimating the Bayes factor than the Savage-Dickey Density Ratio. They call it the encompassing prior approach (EPA). Essentially, it works nicely for interval tests and other non-point null hypotheses (the SDDR tests point hypotheses). Intervals can be used to test directional hypotheses about parameters. In addition, the encompassing prior approach does not require point density estimation, which can be computationally advantageous.
 
-Imagine that you have two hypotheses about effect parameters, $\alpha$s, that you want to compare. One model, the _encompassing_ model, states that the $\alpha$s are free to vary. The other model places a constraint on the $\alpha$s, that they are near 0.
+Imagine that you have two hypotheses about effect parameters, $\alpha$s, that you want to compare. The $\alpha$s are related to some effect that you want to test and can be calaculated by the `getEffectParameters` function. One model, the _encompassing_ model, states that the $\alpha$s are free to vary. The other model places a constraint on the $\alpha$s, that they are near 0 with some interval size set by $\epsilon$.
 
 $$
 \begin{aligned}
@@ -515,30 +555,35 @@ $$
 
 I will use different notation than @WetzelsGrasmanWagenmakers2010 and notate the encompassing/alternative model as $M_1$ and the constrained/null model as $M_0$.
 
-The gist of the approach is that, under certain circumstances, the Bayes factor in favor of the null model ($M_0$) over the alternative model ($M_1$) can be expressed as the proportion of the posterior of $M_1$ that satisfies the constraint of $M_0$ divided by the proportion of the prior of $M_1$ that satisfies the constraint of $M_0$. In other words, you only need to fit $M_1$ and obtain its posterior. Then you retroactively apply the $M_0$ constraint to the prior and posterior of $M_1$ and see what proportion of each satisfies that constraint.
+The gist of the EPA is that, under certain circumstances, the Bayes factor in favor of the null model ($M_0$) over the alternative model ($M_1$) can be expressed as the proportion of the posterior of $M_1$ that satisfies the constraint of $M_0$ divided by the proportion of the prior of $M_1$ that satisfies the constraint of $M_0$. You only need to fit $M_1$ and obtain prior and posterior samples from it. Then you retroactively apply the $M_0$ constraint to the prior and posterior of $M_1$ and see what proportion of each satisfies that constraint.
 
 This idea is expressed in Equation 2 of @WetzelsGrasmanWagenmakers2010, which is reproduced below with some adjustments and simplifications.
+
 $$
 BF_{01} = \frac{ \frac{1}{m} \sum_{j=1}^m I_{M0}( \vec{\alpha}^{(j)} | D, M_1)  }{ \frac{1}{n} \sum_{k=1}^n I_{M0}( \vec{\alpha}^{(k)} | M_1) }
 $$
 
 The numerator contains posterior $\alpha$s (indicated with $| D$ meaning "given data") and the denominator contains prior $\alpha$s. $\vec{\alpha}^{(j)}$ is the $j$th vector of posterior effect parameters (i.e. one posterior sample of all of the $\alpha$s) while $\vec{\alpha}^{(k)}$ is the $k$th vector of prior effect parameters. 
-$I_{M0}$ is an indicator function for the null model, $M_0$. It returns 1 (true) if the constraints of $M_0$ hold or 0 (false) if the constraints of $M_0$ do not hold.
+$I_{M0}$ is an indicator function that enforces the constraint(s) the null model, $M_0$. It returns 1 (true) if the constraints of $M_0$ hold or 0 (false) if the constraints of $M_0$ do not hold.
 
-To make this concrete, let's set $\epsilon$ to 1, which makes $M_0$ be that all of the $\alpha$s must be within 1 unit of 0.
+To make this concrete, let's set $\epsilon$ to 1.5, which makes $M_0$ be that all of the $\alpha$s must be within 1.5 units of 0.
 
 ```{r}
+# Get prior and posterior effect parameters for some effect
+prior_eff = getEffectParameters(deltas$prior, factors, "let")
+post_eff = getEffectParameters(deltas$post, factors, "let")
+
 # The indicator function takes a vector of effect parameters and returns
 # TRUE (numeric 1) if all absolute values are less than 1 and FALSE (0) otherwise
 I_M0 = function(alpha_vect) {
 	all(abs(alpha_vect) < 1.5)
 }
 
-# Calculate the numerator: The average I_M0 for the posterior
+# Calculate the numerator: The proportion of posterior samples satisfying I_M0
 post_I = apply(post_eff, 1, I_M0)
 numerator = mean(post_I)
 
-# Calculate the denominator: The average I_M0 for the prior
+# Calculate the denominator: The proportion of prior samples satisfying I_M0
 prior_I = apply(prior_eff, 1, I_M0)
 denominator = mean(prior_I)
 
@@ -546,72 +591,72 @@ bf_01 = numerator / denominator #In favor of the constrained hypothesis/model
 bf_10 = 1 / bf_01 # In favor of the encompassing hypothesis/model
 ```
 
-The logic of the encompassing priors approach is very much like the SDDR. The posterior proportion satisfying $M_0$, `numerator =` `r numerator`, and the prior proportion satisfying $M_0$, `denominator =` `r denominator`. Thus, in the prior, there is far more evidence that the $\alpha$s are near 0 than in the posterior.
+The logic of the EPA is very much like the SDDR. The posterior proportion satisfying $M_0$, `numerator =` `r numerator`, and the prior proportion satisfying $M_0$, `denominator =` `r denominator`. Thus, in the prior, there is far more evidence that the $\alpha$s are near 0 than in the posterior.
 As a result, the test finds evidence in favor of the encompassing model, $M_1$, which is evidence against the constraint imposed by $M_0$. The Bayes factor in favor of $M_1$, `bf_10 =` `r bf_10`.
 
-Encompassing priors and SDDR are so similar, in fact, that @WetzelsGrasmanWagenmakers2010 show that as $\epsilon \rightarrow 0$, the encompassing prior approach reduces to the SDDR. Note that for small $\epsilon$, the number of prior and posterior samples from $M_1$ that meet the constraints of $M_0$ becomes small. As a result, the estimated Bayes factor becomes noisy. As such, the SDDR is typically preferable to the encompassing prior approach for narrow intervals.
+EPA and SDDR are so similar, in fact, that @WetzelsGrasmanWagenmakers2010 show that as $\epsilon \rightarrow 0$, the encompassing prior approach reduces to the SDDR (see Figure 3 of that article). Note that for small $\epsilon$, the number of prior and posterior samples from $M_1$ that meet the constraints of $M_0$ becomes small. As a result, the estimated Bayes factor becomes noisy. As such, the SDDR is typically preferable to the encompassing prior approach for very narrow intervals.
 
-On the other hand, for the encompassing priors approach, we did not need to calculate the deviance, $D$, of the effect parameters. We also did not need to estimate the density of $D$ at 0, which is often fairly low, particularly for uninformative priors, given that $D$ can only be 0 if all $\alpha$s are 0.
+On the other hand, for the encompassing prior approach, we did not need to calculate the deviance, $D$, of the effect parameters. We also did not need to estimate the density of $D$ at 0, which is often fairly low, particularly for uninformative priors, given that $D$ can only be 0 if all $\alpha$s are 0.
 
-The encompassing priors approach also differs from the SDDR in that SDDR tests a point null, while encompassing priors tests interval nulls. This has both advantages and disadvantages. The advantage is that encompassing priors allows for a test of interval nulls. The disadvantage is that selecting the width or location of the interval is subjective and can strongly influence the results.
+The EPA also differs from the SDDR in that SDDR tests a point null, while encompassing prior tests interval nulls. This has both advantages and disadvantages. The advantage is that encompassing prior allows for a test of interval nulls. The disadvantage is that selecting the width and/or location of the interval is subjective and can strongly influence the results. Point nulls do not require selection of an interval width.
 
-The encompassing priors approach can be used with `testFunction_encompassingPriors` as follows:
+The EPA can be used with `testFunction_EPA` as follows:
 
 ```{r}
-ht = testFunction_encompassingPriors(prior_eff, post_eff, I_M0)
+ht = testFunction_EPA(prior_eff, post_eff, I_M0)
 ht$bf10
 ```
 
-If you want pass an encompassing priors test function to `testHypothesis`, you will need to make a curried function in which the indicator function is passed to `testFunction_encompassingPriors`.
+If you want pass an encompassing prior test function to `testHypothesis`, you will need to make a curried function in which the indicator function is passed to `testFunction_EPA`.
 
 ```{r}
 curriedTestFun = function(priorEffects, postEffects) {
-	testFunction_encompassingPriors(priorEffects, postEffects, I_M0)
+	testFunction_EPA(priorEffects, postEffects, I_M0)
 }
 
-ht = testHypothesis(cms$prior, cms$post, factors, "let", testFunction=curriedTestFun)
+ht = testHypothesis(deltas$prior, deltas$post, factors, "let", testFunction=curriedTestFun)
 ht$bf10
 ```
 
-We can make a different constrained model just by changing the indicator function. In this case, $\epsilon$ is reduced to 0.5, which makes the constrained model more constrained.
+We can make a different constrained model just by changing the indicator function. In this case, $\epsilon$ is reduced to 1, which makes the constrained model more constrained.
 
 ```{r}
 narrower = function(priorEffects, postEffects) {
 	I_fun = function(alpha_vect) {
 		all(abs(alpha_vect) < 1)
 	}
-	testFunction_encompassingPriors(priorEffects, postEffects, I_fun)
+	testFunction_EPA(priorEffects, postEffects, I_fun)
 }
 
-ht = testHypothesis(cms$prior, cms$post, factors, "let", testFunction=narrower)
+ht = testHypothesis(deltas$prior, deltas$post, factors, "let", testFunction=narrower)
 ht$bf10
 ```
 
-If you want to test if the effect parameters are in an interval, which is common, there is a helper function called `create_TF_EPInterval`. This tests the null hypothesis that all of the effect parameters are between -1 and 1, which is equivalent to testing that their absolute values are less than 1, so it should produce the same result as the previous test.
+If you want to test if the effect parameters are in an interval, which is common, there is a helper function called `create_EPA_intervalTF`. This tests the null hypothesis that all of the effect parameters are between -1 and 1, which is equivalent to testing that their absolute values are less than 1, so it should produce the same result as the previous test.
 
 ```{r}
-intervalTf = create_TF_EPInterval(-1, 1)
-ht = testHypothesis(cms$prior, cms$post, factors, "let", testFunction=intervalTf)
+intervalTf = create_EPA_intervalTF(-1, 1)
+ht = testHypothesis(deltas$prior, deltas$post, factors, "let", testFunction=intervalTf)
 ht$bf10
 ```
 
-We can also use a different kind of indicator function. Rather than making an interval around 0, we could instead use a measure of the deviance of the $\alpha$s, which is conceptually more like the SDDR approach.
+We can also use a different kind of constraint on the null model. Rather than making an interval around 0, we could instead use a measure of the deviance of the $\alpha$s, which is conceptually more like the SDDR approach.
 ```{r}
 smallSd = function(priorEffects, postEffects) {
 	I_fun = function(alpha_vect) {
 		sd(alpha_vect) < 1
 	}
-	testFunction_encompassingPriors(priorEffects, postEffects, I_fun)
+	testFunction_EPA(priorEffects, postEffects, I_fun)
 }
 
-ht = testHypothesis(cms$prior, cms$post, factors, "let", testFunction=smallSd)
+ht = testHypothesis(deltas$prior, deltas$post, factors, "let", testFunction=smallSd)
 ht$bf10
 ```
 
 Note that using the SDDR test function produces different, if still substantively equivalent, results.
 
 ```{r}
-ht = testHypothesis(cms$prior, cms$post, factors, "let", testFunction=testFunction_SDDR)
+ht = testHypothesis(deltas$prior, deltas$post, factors, "let", testFunction=testFunction_SDDR)
 ht$bf10
 ```
 
@@ -619,64 +664,73 @@ ht$bf10
 
 ## Testing the Intercept/Grand Mean
 
-If you want to test the value of the intercept of the model, use the `testIntercept` function. Note that this tests the intercept of whatever cell means you provide to it. Thus, if you provide cell effects like from the model in Example 2, you are testing the intercept of those cell effects, not of the actual cell means.
+If you want to test the value of the intercept of the model, use the `testIntercept` function. Note that this tests the intercept of whatever cell means you provide to it. Thus, if you provide cell effects like from Model 2, you are testing the intercept of those cell effects, not of the actual cell means.
 
-The value of the intercept depends on the type of contrasts that you use. For orthogonal contrasts, the intercept is the grand mean, but it has a different value for treatment contrasts (`contr.treatment`).
+The value of the intercept depends on the type of contrasts that you use. For orthogonal contrasts, the intercept is the grand mean, but it has a different interpretation for, e.g., treatment contrasts (`contr.treatment`). In particular, when treatment contrasts are used, the intercept is equal to the value of the cell defined by the combination of the first level of each of the factors in the design.
+
+You can test, for example, that the intercept is equal to 2.5.
+
+```{r warning=FALSE}
+testIntercept(deltas$prior, deltas$post, factors, testVal = 2.5)
+```
+
+Rather than testing a point hypothesis about the intercept, you can also use the encompassing prior approach to test interval hypotheses. Below, I define a test function that tests an interval 0.5 units around the `testVal`.
+
 ```{r}
-testIntercept(cms$prior, cms$post, factors, testVal = 2.5)
-
 # You don't have to use testVal, but I do here to define the center of the interval.
 intTestFun = function(prior_int, post_int, testVal) {
 	I_int = function(int) {
-		(testVal - 0.5) < int && int < (testVal + 0.5)
+		((testVal - 0.5) < int) && (int < (testVal + 0.5))
 	}
-	testFunction_encompassingPriors(prior_int, post_int, I_int)
+	testFunction_EPA(prior_int, post_int, I_int)
 }
 
-testIntercept(cms$prior, cms$post, factors, testVal = 2.5, testFunction = intTestFun)
-
+ht = testIntercept(deltas$prior, deltas$post, factors, testVal = 2.5, 
+							testFunction = intTestFun)
+ht$bf01
 ```
 
-
 You can get the intercept with `getEffectParameters` by providing the special value `"(Intercept)"` for the `testedFactors` argument.
+
 ```{r}
-prior_int = getEffectParameters(cms$prior, factors, "(Intercept)")
-prior_int[1:3,]
+prior_int = getEffectParameters(deltas$prior, factors, "(Intercept)")
+head(prior_int)
 ```
 
 ## Problems with Density Estimation for SDDR {#densityEstimationProblems}
 
-When using SDDR, you must estimate the density of the prior and posterior at a point. This can be made problematic for a number of reasons. One thing that makes it problematic is when the prior has thick tails, like the Cauchy distribution. We will work with a model like in [Example 2](#example2), but with the following prior on $\alpha_i$.
+When using SDDR, you must estimate the density of the prior and posterior at a point. This can be made problematic for a number of reasons. One thing that makes it problematic is when the prior has thick tails, like the Cauchy distribution. We will work with a model like [Model 2](#model2), but with the following prior on the cell effects, $\delta_i$.
+
 $$
-\alpha_i \sim \text{Cacuchy}(0, 3)
+\delta_i \sim \text{Cacuchy}(0, 3)
 $$
 
 ```{r echo=FALSE}
-ex2_getAlphas_cauchy = function(mus, posteriorSD = 1, priorLoc = 0, priorScale = 3, cornerstone = 1, samples = 10000) {
+ex2_getDeltas_cauchy = function(mus, posteriorSD = 1, priorLoc = 0, priorScale = 3, cornerstone = 1, samples = 10000) {
 	
 	mus = mus - mus[cornerstone]
 	
-	priorCMs = postCMs = matrix(0, nrow = samples, ncol=length(mus))
+	priorDelta = postDelta = matrix(0, nrow = samples, ncol=length(mus))
 	
-	for (i in 1:ncol(postCMs)) {
+	for (i in 1:ncol(postDelta)) {
 		if (!(i %in% cornerstone)) {
-			priorCMs[,i] = rcauchy(nrow(priorCMs), priorLoc, priorScale)
-			postCMs[,i] = rnorm(nrow(postCMs), mus[i], posteriorSD)
+			priorDelta[,i] = rcauchy(nrow(priorDelta), priorLoc, priorScale)
+			postDelta[,i] = rnorm(nrow(postDelta), mus[i], posteriorSD)
 		}
 	}
 	
-	list(prior = priorCMs, post = postCMs)
+	list(prior = priorDelta, post = postDelta)
 }
 ```
 
 ```{r}
 mus = 2:7
-cms = ex2_getAlphas_cauchy(mus) # Sample from prior and posterior of alphas
+deltas = ex2_getDeltas_cauchy(mus) # Sample from prior and posterior of alphas
 
-prior_eff = getEffectParameters(cms$prior, factors, "let")
+prior_eff = getEffectParameters(deltas$prior, factors, "let")
 prior_D = apply(prior_eff, 1, var)
 
-post_eff = getEffectParameters(cms$post, factors, "let")
+post_eff = getEffectParameters(deltas$post, factors, "let")
 post_D = apply(post_eff, 1, var)
 
 library(polspline)
@@ -738,7 +792,7 @@ tryCatch({
 
 Density estimation errors out. It is possible that a density estimation procedure specialized for estimating density at the edge of a distribution would work better, but the `polspline` package works pretty well for the most part.
 
-This package also provides functionality to estimate the Bayes factor with the [encompassing priors](#encompassingPriors) approach, which can avoid some of the problems with density estimation.
+This package also provides functionality to estimate the Bayes factor with the [encompassing prior](#encompassingPrior) approach, which can avoid some of the problems with density estimation.
 
 ### Modifying Test Functions
 
@@ -753,13 +807,13 @@ curriedTestFunction = function(priorEffects, postEffects) {
 	testFunction_SDDR(priorEffects, postEffects, postMaxMult = 3)
 }
 
-ht = testHypothesis(cms$prior, cms$post, factors, "let", testFunction = curriedTestFunction)
+ht = testHypothesis(deltas$prior, deltas$post, factors, "let", testFunction = curriedTestFunction)
 ht$bf10
 ```
 
 If you need to write your own test function, just know that it takes two matrices of effect parameters. The first is the prior and the second is the posterior.
 
-See also the [Encompassing Priors](#encompassingPriors) section for more examples of curried test functions.
+See also the [Encompassing Prior](#encompassingPrior) section for more examples of curried test functions.
 
 ## Non-Fully-Crossed/Unbalanced Designs {#unbalancedDesigns}
 
@@ -775,7 +829,7 @@ factors = data.frame(
 	num = c('1', '1', '2', '1', '2', '3')
 )
 
-mus    = c( 0,   0,   6,   0,   0,   0 )
+mus   = c( 0,   0,   6,   0,   0,   0 )
 ```
 
 Let's imagine that for some parameter we get the following pattern of cell means. A "." indicates a missing cell in the design.
@@ -867,13 +921,13 @@ beta = solve(t(X) %*% X) %*% t(X) %*% mus
 zapsmall(beta)
 ```
 
-When working with non-fully-crossed designs, you have to choose what main effects or interactions to account for. By default, `testHypothesis` takes the first approach: Only estimate the main effect, but not interactions. More generally, it only includes terms up to and including the tested effect. For example, if you are testing two-factor interaction, it will estimate that interaction and the two associated main effects. If there is a third factor, it will not estimate the main effect of that third factor or any interactions including that third factor.
+When working with non-fully-crossed designs, you have to choose what main effects or interactions to account for. By default, `testHypothesis` takes the first approach: Only estimate the main effect, but not interactions. More generally, it only includes terms up to and including the tested effect. This is conceptually equivalent to what frequentist ANOVA does. For example, if you are testing two-factor interaction, it will estimate that interaction and the two associated main effects. If there is a third factor, it will not estimate the main effect of that third factor or any interactions including that third factor.
 
 To get more control over what effects are estimated, you can provide the `dmFactors` argument to `testHypothesis` or `getEffectParameters`.
 Here I use a formula to specify that I want to use a design matrix with both main effects.
 
 ```{r}
-getEffectParameters(matrix(mus, nrow=1), factors, "num", dmFactors= ~ let + num)
+getEffectParameters(matrix(mus, nrow=1), factors, "num", dmFactors= "~ let + num")
 ```
 
 See also the `contrastType` argument of `testHypothesis` and `getEffectParameters`.
@@ -895,20 +949,24 @@ factors = data.frame(
 # Build in an interaction
 mus = c( 1, 5, 3, 3 )
 
-cms = ex2_getAlphas(mus)
+deltas = ex2_getDeltas(mus)
 
-testHypothesis(cms$prior, cms$post, factors, c("let", "num"))$bf10
+testHypothesis(deltas$prior, deltas$post, factors, c("let", "num"))$bf10
 ```
 
 Now that we know that there is an interaction in the design, we should not interpret main effects. Instead, we should test for main effects of one factor within each level of the other factor to determine where effects are present.
 
-```{r}
-usedCells = (factors$let == 'a')
-testHypothesis(cms$prior[, usedCells], cms$post[,usedCells], factors[usedCells,], "num")$bf10
+In the following examples, we condition on first the `a` level of `let` and then the `b` level of `let`. In both cases, the main effect of `num` is tested.
 
-usedCells = (factors$let == 'b')
-testHypothesis(cms$prior[, usedCells], cms$post[,usedCells], factors[usedCells,], "num")$bf10
+```{r}
+js = (factors$let == 'a')
+testHypothesis(deltas$prior[, js], deltas$post[,js], factors[js,], "num")$bf10
+
+js = (factors$let == 'b')
+testHypothesis(deltas$prior[, js], deltas$post[,js], factors[js,], "num")$bf10
 ```
+
+We find the expected result: There is a simple effect of `num` within the `a` level of `let`, but no simple effect of `num` within the `b` level of `let`.
 
 
 ### Nested Design
@@ -921,22 +979,21 @@ factors = data.frame(
 	num = c('1', '2', '3', '4', '1', '2')
 )
 
-mus = c( 2, 3, 5, 5,  3, 2 )
+mus =   c( 2,   3,   5,   5,   3,   2 )
 
-cms = ex2_getAlphas(mus)
+deltas = ex2_getDeltas(mus)
 
-usedCells = (factors$let == 'a')
-testHypothesis(cms$prior[, usedCells], cms$post[,usedCells], factors[usedCells,], "num")$bf10
+# Select cells within the 'a' level of let
+cells = (factors$let == 'a')
+# Test the main effect of num for those cells
+testHypothesis(deltas$prior[, cells], deltas$post[,cells], factors[cells,], "num")$bf10
 
-usedCells = (factors$let == 'b')
-testHypothesis(cms$prior[, usedCells], cms$post[,usedCells], factors[usedCells,], "num")$bf10
+cells = (factors$let == 'b')
+testHypothesis(deltas$prior[, cells], deltas$post[,cells], factors[cells,], "num")$bf10
 ```
 
-
+These results fit with the pattern in the cell means: There is a main effect of `num` within the `a` level of `let`, but no main effect of `num` within the `b` level of `let`.
 
 
 # References
-
-
-
 
