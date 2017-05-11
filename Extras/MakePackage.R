@@ -6,7 +6,7 @@ library(roxygen2)
 
 
 #increment pkgVer!!!
-pkgVer = "0.1.2"
+pkgVer = "0.1.3"
 
 setwd("~/../Programming/R/CMBBHT/")
 
@@ -39,11 +39,14 @@ devtools::check()
 
 
 remove.packages("CMBBHT")
+
 devtools::install_github("hardmanko/CMBBHT", build_vignettes = TRUE)
 
-devtools::install_github("hardmanko/CMBBHT@v0.1.1", build_vignettes = TRUE)
+devtools::install_github("hardmanko/CMBBHT@v0.1.3", build_vignettes = TRUE)
+
 
 vignette("Manual", "CMBBHT")
+vignette("BinomialTutorial", "CMBBHT")
 
 
 

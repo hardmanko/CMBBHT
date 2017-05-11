@@ -15,13 +15,22 @@ install.packages(c("devtools", "R.rsp"))
 devtools::install_github("hardmanko/CMBBHT", build_vignettes = TRUE)
 ```
 
-You can install a particular release by appending a release tag, e.g., `@v0.1.1` to the repository name.
+You can install a particular release by appending a release tag, e.g., `@v0.1.3` to the repository name.
 ```{r}
-devtools::install_github("hardmanko/CMBBHT@v0.1.1", build_vignettes = TRUE)
+devtools::install_github("hardmanko/CMBBHT@v0.1.3", build_vignettes = TRUE)
 ```
+
+Instructions
+------------
 
 Once the package is installed, open the manual with
 ```{r}
 vignette("Manual", "CMBBHT")
 ```
 You can also find a pdf of the manual in the `vignettes` directory of this repository.
+
+In addition to the manual, there is a tutorial vignette that can be opened with
+```{r}
+vignette("BinomialTutorial", "CMBBHT")
+```
+or that can be found in the `vignettes` directory.

@@ -13,13 +13,13 @@ setwd("~/../Programming/R/CMBBHT/Extras/BinomialTutorial/")
 
 # Introduction
 
-This is a tutorial that shows an in-depth example of using the R package [CMBBHT](https://github.com/hardmanko/CMBBHT). The package name is an (excessive) acronym that expands to Cell Means Based Bayesian Hypothesis Tests. You can download the [main package manual](https://github.com/hardmanko/CMBBHT/releases/download/v0.1.2/Manual.pdf) as a PDF.
+This is a tutorial that shows an in-depth example of using the R package [CMBBHT](https://github.com/hardmanko/CMBBHT). The package name is an (excessive) acronym that expands to Cell Means Based Bayesian Hypothesis Tests. You can download the [main package manual](https://github.com/hardmanko/CMBBHT/releases/download/v0.1.3/Manual.pdf) as a PDF.
 
 CMBBHT provides a reasonably simple interface for performing Bayesian hypothesis tests in designs where cell means, differences between cells, or something similar are estimated in a factorial design. Factorial designs are very common in psychology. Many studies analyze their data directly with analysis of variance (ANOVA). I tend to use various kinds of psychometric model, so instead of having data to analyze, I instead have parameter estimates from the fitted model. It isn't good practice to use ANOVA on parameter estimates, so I needed some other way to perform tests of main effects and interactions in parameter values for my psychometric models.
 
-I worked out some not-too-complex logic that allows for the estimation Bayes factors related to tests of main effects and interactions (generically, _ANOVA effects_ or just _effects_). The logic is explained in the [package manual](https://github.com/hardmanko/CMBBHT/releases/download/v0.1.2/Manual.pdf) along with code examples that perform the steps in the procedure.
+I worked out some not-too-complex logic that allows for the estimation Bayes factors related to tests of main effects and interactions (generically, _ANOVA effects_ or just _effects_). The logic is explained in the package manual (see link above) along with code examples that perform the steps in the procedure.
 
-This document includes an in-depth tutorial showing how to use CMBBHT with an example model. I will specify the model, fit it to simulated data, and show how to use CMBBHT to test hypotheses about model parameters. Additional topics are discussed, including how to deal with different kinds of factorial design and how to analyze within-participants and between-participants data.
+This document contains an in-depth tutorial showing how to use CMBBHT with an example model. I will specify the model, fit it to simulated data, and show how to use CMBBHT to test hypotheses about model parameters. Additional topics are discussed, including how to deal with different kinds of factorial design and how to analyze within-participants and between-participants data.
 
 # Model
 
