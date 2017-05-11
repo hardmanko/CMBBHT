@@ -54,8 +54,12 @@ makeDesignMatrix = function(factors, dmFactors, contrastType, renameCols=FALSE) 
 	
 	m = stats::model.matrix(form, factors, contrasts.arg)
 
-	if (renameCols && is.character(contrastType) && contrastType %in% c("contr.treatment", "contr.SAS")) {
-		colnames(m) = renameDesignMatrixColumns( colnames(m), factors, dmFactors, contrastType)
+	if (renameCols) {
+		if (is.character(contrastType) && contrastType %in% c("contr.treatment", "contr.SAS")) {
+			colnames(m) = renameDesignMatrixColumns( colnames(m), factors, dmFactors, contrastType)
+		} else {
+			message('renameCols is ignored is contrastType is not one of "contr.treatment" or "contr.SAS".')
+		}
 	}
 	
 	list(mat=m, terms=tt)
@@ -278,6 +282,8 @@ getEffectParameters = function(cellMeans, factors, testedFactors, dmFactors = NU
 #' 
 #' @return The return value depends on the choice of `testFunction`. See [`testFunction_SDDR`] for an example.
 #' 
+#' @seealso See [`testHypotheses`] for performing multiple tests at once. See [`groupEffectParameters`] for pairwise comparisons of effect parameters.
+#' 
 #' @md
 #' @export
 testHypothesis = function(priorCMs, postCMs, factors, testedFactors, dmFactors = testedFactors,
@@ -347,7 +353,19 @@ testHypothesis = function(priorCMs, postCMs, factors, testedFactors, dmFactors =
 #' @return A `data.frame` with one test on each row.
 #' 
 #' @md
-#' @export 
+#' @export
+#' 
+#' @examples 
+#' \dontrun{
+#' prior = getPrior()
+#' post = getPost()
+#' factors = data.frame(let = c('A', 'A', 'B', 'B'),
+#' num = c('1', '2', '1', '2'))
+#' # Test both main effects and the interaction
+#' testHypotheses(prior, post, factors, 
+#'   testedFactors = c('let', 'num', 'let:num'))
+#' 
+#' }
 testHypotheses = function(prior, post, factors, testedFactors, dmFactors = testedFactors, contrastType = NULL, testFunction = testFunction_SDDR, usedFactorLevels = NULL, testName = testedFactors) {
 	
 	#If testedFactors is not provided, use all factors.
