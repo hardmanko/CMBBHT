@@ -431,7 +431,7 @@ testHypotheses = function(prior, post, factors, testedFactors, dmFactors = teste
 
 #' Test the Value of the Intercept
 #' 
-#' Tests whether the intercept/grand mean has some given value. For a general test of whether a parameter has a given value, see [`valueTest_SDDR`]. Note that in order for this test to be very meaningful (probably)
+#' Tests whether the intercept/grand mean has some given value. For a general test of whether a parameter has a given value, see [`valueTest_SDDR`]. Note that in order for this test to be very meaningful, the cell means should not be zero-centered or otherwise arbitrarily centered (i.e. you should add in any grand mean parameter in the model before performing the test).
 #' 
 #' @param priorCMs See [`testHypothesis`].
 #' @param postCMs See [`testHypothesis`].

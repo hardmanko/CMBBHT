@@ -27,10 +27,8 @@ Once the package is installed, open the manual with
 ```{r}
 vignette("Manual", "CMBBHT")
 ```
-You can also find a pdf of the manual in the `vignettes` directory of this repository.
-
 In addition to the manual, there is a tutorial vignette that can be opened with
 ```{r}
 vignette("BinomialTutorial", "CMBBHT")
 ```
-or that can be found in the `vignettes` directory.
+Both the manual and the tutuorial can be found in the `vignettes` directory of this repository.

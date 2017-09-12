@@ -822,7 +822,7 @@ $$
 \bar{P}_{j} = \frac{1}{I} \sum_i logit^{-1}(\rho_i + \delta_j)
 $$
 
-It would be nice if the value of $\bar{P}_j$ would have the same value regardless of whether it is calculated in the exact way that the model states or in terms of $\mu_\rho$.
+It would be nice if $\bar{P}_j$ would have the same value regardless of whether it is calculated in the exact way that the model states or in terms of $\mu_\rho$.
 
 The logit transformation is nonlinear, however, which means that there is no reason to believe that the following equality holds (even if $\mu_\rho$ is equal to the arithmetic mean of $\rho_i$, which it is not).
 
@@ -923,10 +923,12 @@ When there is disagreement, the difference between the groups is very small comp
 ```{r}
 whichDisagree = which(mt_gt != tm_gt)
 
+# Those that agree
 sd((mt1 - mt2)[-whichDisagree])
-sd((mt1 - mt2)[whichDisagree])
-
 sd((tm1 - tm2)[-whichDisagree])
+
+# Those that disagree
+sd((mt1 - mt2)[whichDisagree])
 sd((tm1 - tm2)[whichDisagree])
 ```
 
