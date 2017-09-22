@@ -9,7 +9,7 @@ toc: yes
 
 # Introduction
 
-This package performs ANOVA-like Bayesian hypothesis tests for factorial designs for which cell means or differences between cells are estimated in a Bayesian model.
+This package performs ANOVA-like Bayesian hypothesis tests for factorial designs for which cell means or differences between cells are estimated in a Bayesian model. The package name is an (excessive) acronym that expands to Cell Means Based Bayesian Hypothesis Tests.
 
 You must have a factorial design, including single-factor designs, in which some dependent variable or model parameter is allowed to vary as a function of factor levels. Continuous independent variables are not supported.
 
@@ -17,14 +17,7 @@ You must have samples from the prior and posterior distributions of the paramete
 
 This manual will first go through examples of some of the kinds of models that this package is designed to analyze. Then, basic usage of the package will be demonstrated. The steps of the procedure used to estimate Bayes factors are then shown. Finally, there are additional notes on how to use the package.
 
-## Disclaimer
-
-There are requirements for using this package that you as a user of this package need to be aware of. You are responsible for reading this manual and the referenced articles. A failure to do so means that your analyses may be very wrong.
-That said, the approaches used by this package are fairly general, so you are probably ok at the $p < 0.05$ threshold.
-
-In addition, none of this package has been peer-reviewed, although some parts of it are going through peer review.
-
-## Version
+## Version and Installation
 
 This documentation is for version `r packageVersion("CMBBHT")` of this package. You can install this version of the package with the following two lines of code:
 
@@ -36,10 +29,30 @@ devtools::install_github("hardmanko/CMBBHT@v{{ver}}", build_vignettes = TRUE)',
 
 ```
 
+## Additional Documentation {#additionalDocumentation}
+
+In addition to this document, which is the primary package documentation, there is an in-depth example of how to use this package called the Binomial Tutorial. If CMBBHT is installed, you can open the Binomial Tutorial vignette with the following line of code:
+
+```{r eval=FALSE}
+vignette("BinomialTutorial", package="CMBBHT")
+```
+
+There is a huge amount of relevant content in that vignette that cannot be found in this document, so I would highly recommend reading both this document and the Binomial Tutorial.
+
+The Appendix of @RickerHardman2017 contains an explanation of the logic of the hypothesis testing procedure used by this package that differs from the explanation in this document. The explanation in @RickerHardman2017 is more conceptual and uses mathematical notation. The explanation here is still conceptual, but uses code more than math.
+
+
+## Disclaimer
+
+There are requirements for using this package that you as a user of this package need to be aware of. You are responsible for reading this manual, at least some of the referenced articles, and/or any other information that helps to clarify your understanding of what this package does. A failure to do so means that your analyses may be very wrong.
+That said, the approaches used by this package are fairly general, so you are probably ok at the $p < 0.05$ threshold.
+
 
 # Example Models
 
-What follow are some examples of the kinds of models that you might have that you can use with this package. These examples are not meant to exclude other models.
+What follow are some examples of the kinds of models that you might have that you can use with this package. 
+These examples are not meant to exclude other models.
+Keep an eye out for terminology while reading these examples. 
 
 ## Model 1: Basic Cell Means {#model1}
 
@@ -65,7 +78,7 @@ This design is possibly workable, but it has the issue that the prior on the cel
 
 ## Model 2: Grand Mean plus Cell Effects {#model2}
 
-In this model, the data are the same as in Model 1. The model estimates a grand mean/intercept, $\mu$, (the interpretation of $\mu$ depends on other choices) and a cell effect, $\delta_i$, for each cell. To get the mean for each cell, you add the cell effect to the grand mean/intercept. 
+In this model, the data are the same as in Model 1. The model estimates a grand mean/intercept, $\mu$, (the exact interpretation of $\mu$ depends on other choices) and a cell effect, $\delta_i$, for each cell. To get the mean for each cell, you add the cell effect to the grand mean/intercept. 
 
 At the data level, this model is the same as in Model 1.
 
@@ -95,9 +108,9 @@ $$
 \end{aligned}
 $$
 
-Thus, different $\delta$s have different priors. I see no problem with this, you just have to be careful that when you sample from the priors on the $\delta$s that you account for the different priors. Note that you do not need to use 1 as the cornerstone condition. I have found that using the cell with the most data, if there is one, works the best.
+Thus, different $\delta$s have different priors. I see no problem with this, you just have to be careful that when you sample from the priors on the $\delta$s that you account for the different priors on different $\delta$s. Note that you do not need to use index 1 as the cornerstone condition. I have found that using the cell with the most data, if there is one, works the best.
 
-I typically use a model like this with a cornerstone parameterization and it usually works well. Part of the value of this package is that it allows you to use a simple model like this one, that is not parameterized in terms of main effects and interactions, but after estimating the cell effects, $\delta_i$, you can test whether main effects or interactions are present.
+I typically use a model like this with a cornerstone parameterization and it usually works well. Part of the value of this package is that it allows you to use a simple model like this one, that is not parameterized in terms of main effects and interactions, but after estimating the cell effects, $\delta_i$, you can test whether main effects or interactions are present. How to do those tests with this package will be discussed later.
 
 ## Model 3: Full ANOVA Effects Model {#model3}
 
@@ -133,11 +146,11 @@ A major advantage of a model of this kind over Model 2 is that it is possible to
 
 If you have a model like this, you should be able to use this package fairly easily. Rather than using cell means for your analysis, you can directly use your estimates of the effect parameters, $\alpha$, $\beta$, and $\pi$. To test hypotheses about the existence of effects, you can pass the prior and posterior effect parameters to `testFunction_SDDR` or `testFunction_EPA`. This should make more sense once you read farther.
 
-Note that like [Model 2](#model2), you must provide some constraints on the effect parameters in order for this model to be identifiable. This gets complicated when you have multiple factors so I won't go into it. I don't typically parameterize my models like this because of the complexity of constraining the effect parameters. In my experience, hierarchical constraint is dead on arrival, so don't bother trying. You need a hard constraint, not a soft constraint.
+Note that like [Model 2](#model2), you must provide some constraints on the effect parameters in order for this model to be identifiable. This gets complicated when you have multiple factors so I won't go into it. I don't typically parameterize my models like this because of the complexity of constraining the effect parameters. In my experience, hierarchical constraint is dead on arrival, so don't bother trying. You need a hard constraint, like a cornerstone or sums-to-zero, not a soft constraint.
 
 ## Model 4: A Complex Model
 
-For all of the models so far, you might be wondering why I didn't just use the `BayesFactor` package. For all of those models, you should just use the `BayesFactor` package. Where this package becomes useful is when your model is complex and there is a fair degree of separation between the parameters and the data. An example of such a model was used by @HardmanVergauweRicker2017. In that model, the data are distributed as a mixture of various distributions. If we are interested in a parameter $\phi$, a version of the model that leaves a lot out is something like
+For all of the models so far, you might be wondering why I didn't just use the `BayesFactor` package and do an ANOVA. For all of those models, you should just use the `BayesFactor` package. Where this package becomes useful is when your model is complex and there is a fair degree of separation between the parameters and the data. An example of such a model was used by @HardmanVergauweRicker2017. In that model, the data are distributed as a mixture of various distributions. If we are interested in a parameter $\phi$, a version of the model that leaves a lot out is something like
 
 $$ 
 \begin{aligned}
@@ -150,11 +163,11 @@ $$
 
 Where $y_{ij}$ are the data for the $i$th participant in the $j$th task condition, $\phi_{ij}$ is a parameter of interest, $\theta$ are a bunch of other parameters, and $p_k$ and $f_k$ are mixture weights and density functions for the $k$th component of the model. $\phi_{ij}$, unfortunately, is some nonlinear transformation, $T()$, of the sum of a participant effect, $\phi_i$, and an effect of task condition, $\phi_j$.
 
-Inference is focused on the effect of task condition, $\phi_j$. That is where this package shines: It can test whether $\phi_j$ varies with task condition without worrying about the whole structure of the model. All it needs are the prior and posterior samples of $\phi_j$. Models like this are why I wrote this package.
+Inference is focused on the effect of task condition, $\phi_j$. That is where this package shines: It can test whether $\phi_j$ varies with task condition without worrying about the whole structure of the model. All it needs are the prior and posterior samples of $\phi_j$. Models like Model 4 are why I wrote this package.
 
 # Basic Usage
 
-I will work with a model like [Model 2](#model2). In that model, differences from a cornerstone condition are estimated with cell effect parameters, $\delta_i$. I will use a design with two factors, called `let` and `num`. The `let` factor has three levels, `a`, `b`, and `c`. The `num` factor has two levels, `1` and `2`. The design is fully crossed.
+TO demonstrate how to use this package while limiting complexity, I will work with a model like [Model 2](#model2). In Model 2, differences from a cornerstone condition are estimated with cell effect parameters, $\delta_i$. I will use a design with two factors, called `let` and `num`. The `let` factor has three levels, `a`, `b`, and `c`. The `num` factor has two levels, `1` and `2`. The design is fully crossed.
 
 One of the things that you will need in order to use this package is a `data.frame` that contains the factor levels. Each column is a factor and each row contains a combination of factor levels that define a cell of the design. Note that factor names and factor levels may not contain period (".") or colon (":"). The following code creates the `factors` `data.frame` for future use.
 
@@ -255,30 +268,26 @@ This Bayes factor favors the null as it is well below 1, so there is no interact
 
 This concludes basic use of the package. With just a little setup and one function call, you are able to test hypotheses about main effects or interactions. This package, however, has more to offer, as I describe in the following sections.
 
-For an in-depth tutorial that gives a concrete example of model specification and fitting, and generally provides more information about how to use this package in practice, see the `BinomialTutorial` vignette that comes with this package. Once the package has been installed, you can open it with
-```{r eval=FALSE}
-vignette("BinomialTutorial", package="CMBBHT")
-```
-or you can download it from the GitHub repository.
+For an in-depth tutorial that gives a concrete example of model specification and fitting, and generally provides more information about how to use this package in practice, see the `BinomialTutorial` vignette that comes with this package and is discussed further in the [Additional Documentation](#additionalDocumentation) section of this document.
 
 # Steps of the procedure
 
-This section goes step-by-step through what needs to happen to perform a hypothesis test. The point of this section is to help you understand how this package works.
+This section goes step-by-step through what needs to happen to perform a hypothesis test using the logic of this package. The point of this section is to help you understand how this package works. You will probably not need to understand this logic to use this package, but you might benefit from reading it anyway.
 
 I am going to perform a test of the hypothesis that there is a main effect of the `let` factor for the same data that was just being used. The null hypothesis is that there is no main effect and the alternative hypothesis is that there is a main effect. If there is no main effect, there should be no difference between the levels of the `let` factor.
 
 ## Effect Parameters
 
-You can calculate matrices of effect parameters given cell means/differences and the `factors` `data.frame` with the function `getEffectParameters`. Here I calculate the posterior effects for the main effect of the `let` factor. A number of steps happen in `getEffectParameters`, but those steps are not important to understanding the concept of how the hypothesis testing procedure works, so I will skip them. The process is mechanical and not controversial. 
+You can calculate matrices of effect parameters given cell means/differences and the `factors` `data.frame` with the function `getEffectParameters`. Here I calculate the posterior effects for the main effect of the `let` factor. A number of steps happen in `getEffectParameters`, but those steps are not important to understanding the concept of how the hypothesis testing procedure works, so I will skip them. The process of calculating effect parameters is mechanical and not controversial. 
 
 ```{r}
 post_eff = getEffectParameters(deltas$post, factors, "let")
 post_eff[1:5,]
 ```
 
-Each column of `post_eff` corresponds to one ANOVA effect parameters. These effect parameters were calculated with a sums-to-zero constraint, which can be verified observing that each row (sample) sums to 0. These effect parameters can be interpreted as the difference from the grand mean to each cell mean. From the plot of cell means above, it is clear that the `a` level of `let` has a lower value than average and that the `c` level of `let` has a higher value than average. This is captured by the effect parameters in `post_eff`.
+Each column of `post_eff` corresponds to one ANOVA effect parameter. These effect parameters were calculated with a sums-to-zero constraint, which can be verified by observing that each row (sample) sums to 0. These effect parameters can be interpreted as the difference from the grand mean to each cell mean. From the plot of cell means above, it is clear that the `a` level of `let` has a lower value than average and that the `c` level of `let` has a higher value than average. This is captured by the effect parameters in `post_eff`.
 
-Again, if there is no main effect, there should be no difference between the levels of the `let` factor and the effect parameters should be near 0. One informal way of answering this question is to examine values of the effect parameters.
+Again, if there is no main effect, there should be no difference between the levels of the `let` factor and the effect parameters should be near 0. One informal way of answering this question is to examine the values of the effect parameters.
 
 You can get means and credible intervals for the effect parameters with the `summarizeEffectParameters` function.
 
@@ -293,7 +302,7 @@ You can also plot the summarized effects.
 plotEffectParameterSummary(summary)
 ```
 
-As you can see, there appears to be a main effect because the effect parameters are reasonably far from one another, relative to their credible intervals.
+As you can see, there appears to be a main effect because the effect parameters are reasonably far from one another relative to their credible intervals.
 
 If you don't like Bayes factors as a method of inference, you can still get something out of this package by using summaries of the posterior effect parameters. In addition, you can group posterior effects with pairwise comparisons with `groupEffectParameters`, which gives results that are conceptually similar to, e.g., the Tukey HSD procedure. By default, `groupEffectParameters` uses credible intervals of the difference between effect parameters to group the effects. You can alternately set it to use Bayes factors.
 
@@ -307,7 +316,7 @@ Factor levels that share a grouping letter are indistinguishable. That none of t
 ## Deviance Measure
 
 Now that have explored the effect parameters, we can move on to the next step. Again, under the null hypothesis, the effect parameters should be near to one another. Under the alternative hypothesis, the effect parameters may be more spread out.
-What we want is a measure of the deviance/spread of the effect parameters.
+Thus, we might be able to make use of some measure of the deviance/spread of the effect parameters.
 The default deviance measure used by this package is the sample variance, which I have found to work well (there is no difference between sample variance and population variance in this case; it's just a scale factor). 
 
 If you have a matrix of effect parameters, calculating the deviance, $D$, is very easy. Just `apply` the deviance function, in this case `var`, to each sample (row) from the effect parameters in `post_eff`.
@@ -350,18 +359,22 @@ This is the basic logic of the Savage-Dickey density ratio, which will be discus
 The deviance parameter, $D$, is a function of the effect parameters.
 An important piece of logic that allows the prior on $D$ to be known is that the prior on some function of model parameters is that function of the prior on the parameters.
 
-For example, imagine that a model has two parameters, $\alpha$ and $\beta$ with the following priors.
+For example, imagine that a model has two parameters, $\alpha$ and $\beta$ with the following priors. The normal distributions are parameterized in terms of mean and variance.
 
 $$
-\alpha \sim \text{Normal}(3, 4) \\
-\beta \sim \text{Normal}(7, 2)
+\begin{aligned}
+\alpha &\sim \text{Normal}(3, 4) \\
+\beta &\sim \text{Normal}(7, 2)
+\end{aligned}
 $$
 
 Imagine that there is a parameter $\gamma$ that is equal to the sum of $\alpha$ and $\beta$. I define the function $F$ for notational purposes.
 
 $$
-F(x, y) = x + y \\
-\gamma = F(\alpha, \beta)
+\begin{aligned}
+F(x, y) &= x + y \\
+\gamma &= F(\alpha, \beta)
+\end{aligned}
 $$
 In the prior, $\alpha$ and $\beta$ are indpendent.
 It is known analytically that the sum of two independent normal random variables is a normal random variable with mean equal to the sum of the means and variance equal to the sum of the variances. Thus, the prior on $\gamma$ is
@@ -369,7 +382,7 @@ It is known analytically that the sum of two independent normal random variables
 $$
 \gamma \sim \text{Normal}(10, 6)
 $$
-This basic logic holds for any function $F$ (including $F$ of any number of arguments), which allows for the prior on $D$ to be known. In practical terms, as long as the same function is applied to samples from the prior and posterior, the prior will be correct. It is not neccessary for the prior to be known analytically.
+This basic logic holds for any function $F$ (including $F$ of any number of arguments), which is the critical logic that allows for the prior on the deviance parameter $D$ to be known. In practical terms, as long as the same function is applied to samples from the prior and posterior to calculate some dummy parameter, the prior for that dummy parameter will be correct. It is not neccessary for the prior to be known analytically.
 
 ## Bayes Factor Estimation with Savage-Dickey
 
@@ -398,7 +411,7 @@ bf_01 # BF that D = 0 and there is no effect
 bf_10 # BF that D =/= 0 and there is an effect
 ```
 
-With some extra details to make it more robust when using priors with thick tails (like the Cauchy), the last few steps are done by the following function call:
+The last few steps are done by the following function call (along with some extra steps to make it more robust when using priors with thick tails, like the Cauchy):
 
 ```{r}
 testFunction_SDDR(prior_eff, post_eff)
@@ -408,7 +421,7 @@ See [this section](#densityEstimationProblems) for issues that can arise with th
 
 ## Conclusion
 
-If you read this section, you now have an idea about the basic logic of how this package works. The steps shown here are all performed by the following function call.
+If you read this section, you now have an idea about the basic logic of how this package works. The steps shown above here are all performed by the following function call.
 
 ```{r}
 ht = testHypothesis(deltas$prior, deltas$post, factors, "let")
@@ -420,11 +433,14 @@ ht$bf10
 
 ## Citing this Package
 
-If you use this package, please cite it. An APA citation for this package is:
+The main logic and mathematics of the hypothesis testing procedure used by this package was published in the Appendix of @RickerHardman2017, a full reference for which can be found in the references section at the end of this document.
+
+If you use this package in your research, please cite it. An APA citation for this package is:
 
 Hardman, K.O. (2017). CMBBHT: Cell Means Based Bayesian Hypothesis Tests (Version `r packageVersion("CMBBHT")`) [Computer software]. Retrieved from https://github.com/hardmanko/CMBBHT/releases/tag/v`r packageVersion("CMBBHT")`
 
-Make sure that the version number is correct in both the name and the URL.
+Make sure that the version number is correct for the version that you used in both the name and the URL.
+
 
 ## Effect of Uninformative Priors {#uninformativePrior}
 
@@ -660,7 +676,7 @@ ht = testHypothesis(deltas$prior, deltas$post, factors, "let", testFunction=test
 ht$bf10
 ```
 
-
+The major downside of the EPA is that specifics about the intervals used in null hypotheses substantially affect the resulting Bayes factors, as was shown in these examples. It is possible to create null hypotheses that cover none of the posterior, which results in infinite Bayes factors in faver of the null even if most of the posterior mass is just outside of the interval. The SDDR, as used in this package, does not have these drawbacks, so it is the sensible default. In cases where specialized null hypotheses are required, however, the EPA can be useful.
 
 ## Testing the Intercept/Grand Mean
 
