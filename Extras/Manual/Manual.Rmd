@@ -37,9 +37,9 @@ In addition to this document, which is the primary package documentation, there 
 vignette("BinomialTutorial", package="CMBBHT")
 ```
 
-There is a huge amount of relevant content in that vignette that cannot be found in this document, so I would highly recommend reading both this document and the Binomial Tutorial.
+There is a huge amount of relevant content in the Binomial Tutorial vignette that cannot be found in this document, so I would highly recommend reading both this document and the Binomial Tutorial.
 
-The Appendix of @RickerHardman2017 contains an explanation of the logic of the hypothesis testing procedure used by this package that differs from the explanation in this document. The explanation in @RickerHardman2017 is more conceptual and uses mathematical notation. The explanation here is still conceptual, but uses code more than math.
+The Appendix of @RickerHardman2017 contains an explanation of the logic of the hypothesis testing procedure used by this package that differs from the explanation in this document. The explanation in Ricker and Hardman is more conceptual and uses mathematical notation. The explanation here is still conceptual, but uses code more than math. The Appendix of Ricker and Hardman is included at the end of this document with some added notes.
 
 
 ## Disclaimer
@@ -180,7 +180,7 @@ factors = data.frame(
 
 
 ```{r echo=FALSE}
-ex2_getDeltas = function(mus, posteriorSD = 1, priorMu = 0, priorSD = 3, cornerstone = 1, samples = 10000) {
+M2_sampleDeltas = function(mus, posteriorSD = 1, priorMu = 0, priorSD = 3, cornerstone = 1, samples = 10000) {
 	
 	mus = mus - mus[cornerstone]
 	
@@ -197,14 +197,14 @@ ex2_getDeltas = function(mus, posteriorSD = 1, priorMu = 0, priorSD = 3, corners
 }
 ```
 
-Imagine that the cell means are 2 through 7 and that `ex2_getDeltas` takes samples from the prior and posterior distributions of the $\delta_i$ parameters.
+Imagine that the cell means are 2 through 7 and that `M2_sampleDeltas` takes samples from the prior and posterior distributions of the $\delta_i$ parameters.
 
 ```{r}
 # Corresponds to the rows of factors
 mus = c( 2,3,   4,5,   6,7 )
 
 set.seed(143)
-deltas = ex2_getDeltas(mus)
+deltas = M2_sampleDeltas(mus)
 ```
 
 `deltas` contains two matrices, `prior` and `post`, each of which has 6 columns, each corresponding to an $\delta$ parameter and `r nrow(deltas$post)` rows, each being a sample from the prior or posterior. Note that the order of the columns of the cell effects must correspond to the rows of `factors`.
@@ -223,7 +223,7 @@ library(LineChart)
 #Put the data into a data.frame for plotting
 cmdf = NULL
 for (i in 1:ncol(deltas$post)) {
-	temp = data.frame(let = factors$let[i], num = factors$num[i], alpha = deltas$post[,i])
+	temp = data.frame(let = factors$let[i], num = factors$num[i], delta = deltas$post[,i])
 	cmdf = rbind(cmdf, temp)
 }
 
@@ -232,7 +232,7 @@ credInt = function(x) {
 			 includesCenter = TRUE)
 }
 
-lineChart(alpha ~ let * num, cmdf, errBarType = credInt)
+lineChart(delta ~ let * num, cmdf, errBarType = credInt)
 
 ```
 
@@ -528,7 +528,7 @@ Due to the issues with the basic cell means model, I prefer the [Model 2](#model
 One example of a case that is a little complicated is when a parameter has an estimated prior as in a hierarchical model. For a model like in [Model 2](#model2), it seems reasonable to place a hierarchical prior on the cell effects ($\delta$s in that model) to constrain them. For example, imagine that the prior on $\delta_i$ is changed as follows:
 $$
 \begin{aligned}
-\delta_i &\sim \text{normal}(0, \sigma^2_\delta) \\
+\delta_i &\sim \text{Normal}(0, \sigma^2_\delta) \\
 \sigma^2_\delta &\sim \text{Inverse Gamma}(6, 10)
 \end{aligned}
 $$
@@ -553,7 +553,7 @@ hist(prior_delta_i, main="", prob=TRUE)
 ```
 
 As a result, the prior on $\delta_i$, on the right, is moderately informative.
-[As was discussed](#uninformativePrior), uninformative priors are problematic for obtaining useful Bayes factors. You should try to choose reasonably informative priors even in hierarchical settings.
+[As was discussed](#uninformativePrior), uninformative priors are problematic for obtaining useful Bayes factors using this method. You should try to choose reasonably informative priors even in hierarchical settings.
 
 
 ## Encompassing Prior Approach {#encompassingPrior}
@@ -722,7 +722,7 @@ $$
 $$
 
 ```{r echo=FALSE}
-ex2_getDeltas_cauchy = function(mus, posteriorSD = 1, priorLoc = 0, priorScale = 3, cornerstone = 1, samples = 10000) {
+M2_sampleDeltas_cauchy = function(mus, posteriorSD = 1, priorLoc = 0, priorScale = 3, cornerstone = 1, samples = 10000) {
 	
 	mus = mus - mus[cornerstone]
 	
@@ -741,7 +741,7 @@ ex2_getDeltas_cauchy = function(mus, posteriorSD = 1, priorLoc = 0, priorScale =
 
 ```{r}
 mus = 2:7
-deltas = ex2_getDeltas_cauchy(mus) # Sample from prior and posterior of alphas
+deltas = M2_sampleDeltas_cauchy(mus) # Sample from prior and posterior of alphas
 
 prior_eff = getEffectParameters(deltas$prior, factors, "let")
 prior_D = apply(prior_eff, 1, var)
@@ -965,7 +965,7 @@ factors = data.frame(
 # Build in an interaction
 mus = c( 1, 5, 3, 3 )
 
-deltas = ex2_getDeltas(mus)
+deltas = M2_sampleDeltas(mus)
 
 testHypothesis(deltas$prior, deltas$post, factors, c("let", "num"))$bf10
 ```
@@ -997,7 +997,7 @@ factors = data.frame(
 
 mus =   c( 2,   3,   5,   5,   3,   2 )
 
-deltas = ex2_getDeltas(mus)
+deltas = M2_sampleDeltas(mus)
 
 # Select cells within the 'a' level of let
 cells = (factors$let == 'a')
@@ -1010,6 +1010,83 @@ testHypothesis(deltas$prior[, cells], deltas$post[,cells], factors[cells,], "num
 
 These results fit with the pattern in the cell means: There is a main effect of `num` within the `a` level of `let`, but no main effect of `num` within the `b` level of `let`.
 
+# Appendix of Ricker and Hardman (2017)
+
+What follows is the Appendix of @RickerHardman2017 which is the published description of the basic method used by the CMBBHT package. This appendix was written before I understood the method as well as I do now, so I have added parenthetical notes (Note: blah) where needed. I also made some additional minor changes to improve readability that I did not bother noting. 
+
+The appendix:
+
+For the analyses of the parameters estimated from the @HardmanVergauweRicker2017 model, we performed some Bayesian hypothesis tests on main effects and interactions between experimental factors, such as serial position and consolidation time. The technique that we used has not, in our knowledge, been published, was not straightforward and requires some explanation, which is given here. The technique is fairly general and can be applied to a range of Bayesian models. It is conceptually equivalent to analysis of variance (ANOVA), although the mechanics of the technique are fairly different from ANOVA. The technique only works for fully crossed designs, where you have data in every cell of the design (Note: This turns out to have not been true; designs do not have to be fully crossed). Note that although we used a within-participants design, this hypothesis testing technique does not require a within-participants design, only that the model has parameters that account for differences between conditions. The reader may find it helpful to read the Appendix of Hardman et al. (2017) for information on the specifics of the specification of that model (Note: Or see [Model 4](#model4) for the gist).
+
+In the Hardman et al. (2017) model, parameter values are allowed to vary between task conditions. For example, the $P^M$ parameter varies between conditions. This is done by estimating a single parameter that is shared by all participants that is added to all participant-level parameters, shifting each participant's parameter by the same amount. For example, each participant has their own $P^M$ parameter that reflects their baseline performance, but their effective performance in any condition is based on their own $P^M$ parameter plus the effect of task condition. We call the single, shared parameter for each condition a _condition effect_. (Note: See the second equation in [Model 4](#model4), in which $\phi_i$ is the participant parameter and $\phi_j$ is the condition effect.)
+
+The condition effects are differences from a cornerstone condition. Other models may instead estimate cell means or differences from a grand mean. For the purposes of this technique, there is no substantial difference between true cell means, differences from a grand mean, or differences from a cornerstone condition. It is conceptually most simple to think of the condition effects as cell means, so we will do so. (Note: As discussed with [Model 1](#model1), the downside of using cell means is that the priors are not as easy to work with for cell means then they are  for differences from a cornerstone condition.)
+
+This hypothesis testing technique is for fully crossed factorial experimental designs (Note: Also for not fully crossed designs that use appropriate contrasts) and it can be thought of as a kind of ANOVA. This hypothesis testing technique works for experimental designs with any number of factors, but we will use a two-factor design as an example. The example will be a design with two levels of the A factor and three levels of the B factor. You could think of the A factor as consolidation time and the B factor as serial position. A two-factor ANOVA model can be written as
+
+$$
+\mu_{ij} = \mu_G + \alpha_i + \beta_j + \pi_{ij}
+$$
+where $\mu_{ij}$ is the cell mean (or, in our case, condition effect) for the $i$th row and $j$th column of the design, $\mu_G$ is the grand mean, $\alpha_i$ is the main effect parameter for the $i$th row, $\beta_j$ is the main effect parameter for the $j$th column, and $\pi_{ij}$ is the interaction parameter for the $i$th row and $j$th column. The main effect and interaction parameters are constructed with sums-to-zero constraints on the
+rows and columns (Note: Sums-to-zero contraints are not required, but are one of the best choices for balanced designs.). This means that the $\alpha$s and $\beta$s sum to zero, as do the $\pi$s within each row or column. For the sake of clarity, we
+will use the term _ANOVA parameters_ for $\mu_G$, $\alpha_i$, $\beta_j$, and $pi_{ij}$.
+
+It is possible to construct a design matrix, $X$, that satisfies the
+equality
+$$
+\mu = X\theta
+$$
+where $\mu$ is a vector of cell means (or condition effects) and $\theta$ is a
+vector of ANOVA parameters. Some of the ANOVA parameters
+are not included in $\theta$ because of the sums to zero constraints. We
+will choose to drop the first level of each of the factors. As a result,
+for the 2 by 3 example,
+$$
+\theta = [ \mu_G ~ \alpha_2 ~ \beta_2 ~ \beta_3 ~ \pi_{22} ~ \pi_{23} ]^T
+$$
+where superscript $T$ indicates transpose (i.e., $\theta$ is a column vector). The sums-to-zero constraints are enforced by the way in which $X$ is constructed. This can be done in R (R Core Team, 2015) with the `model.matrix` function using the `contr.sum` function for creating sums-to-zero contrasts.
+
+In this hypothesis testing technique, as in standard ANOVA, we have the cell means, $\mu$, and must solve for $\theta$. This is straightforward and results in the solution
+$$
+\theta = (X^TX)^{-1}X^T\mu
+$$
+For the derivation of this equation, see a GLM textbook (e.g., Kutner, Nachtsheim, Neter, & Li, 2004; Ch. 5, p. 199). We will define
+$$
+S = (X^TX)^{-1}X^T
+$$
+where $S$ can be thought of as the matrix that converts cell means into ANOVA parameters.
+
+In the Hardman et al. (2017) model, each of the condition effect parameters has a prior on it. The priors are independent Cauchy distributions with location 0 and a scale that depends on which model parameter is being used. See Hardman et al. for more information on the default priors (Note: See instead the CatContModel R package documentation for information on the current default priors). The $\theta$ vector contains parameters calculated from the cell means, $\mu$. Thus, the priors on the $\theta$s depend on the priors on the $\mu$s. The priors on the $\mu$s are 0 centered and the Cauchy distribution is symmetrical, which results in the marginal priors on the $\theta$s being 0 centered. It is not necessary to know more about the priors on the $\theta$s for the purpose of this technique.
+
+For the sake of example, we will examine a test the main effect of the B factor. We would use the 2 parameters in $\theta$ that are related to the main effect of B: $\beta_2$ and $\beta_3$. There are three levels of B, but the sums to zero constraints mean that there are only two $\beta$s in $\theta$.
+We will need $\beta_1$ as well, which we can calculate from $\beta_2$ and $\beta_3$ using the knowledge that the $\beta$s sum to 0. The implied $\beta$, $\beta_1$, is equal to the negative sum of the other betas: $\beta_1 = -(\beta_2 + \beta_3)$.
+When an interaction is being tested, calculating implied interaction terms is more complex, but simply requires that the same proce dure be applied iteratively to rows and columns. (Note: I found a better way to calculate the implied elements in $\theta$, so this paragraph should be thought of as a conceptual example rather than giving specifics about part of the procedure.)
+
+We can calculate the $\beta$s based on both the prior and posterior cell means separately. As discussed, the prior on each of the $\beta$s is 0 centered. As such, the prior belief is that the $\beta$s are dispersed around 0. In the posterior, the $\beta$s may be more or less dispersed around 0 than in the prior. If there is no main effect, we would expect the posterior $\beta$s to be more closely clustered around 0 than the prior $\beta$s. If there is a main effect, we would expect that the posterior $\beta$s would be more dispersed from 0 than in the prior. This logic establishes the basic setup for the hypothesis test, but there are a few more steps.
+
+We will use the Savage-Dickey density ratio as part of this hypothesis testing technique. The Savage-Dickey density ratio can be used to provide the Bayes factor for a test of the hypothesis that a parameter has a given value (@WagenmakersEtAl2010). It requires the estimation of the density at a point in the prior distribution and at the same point in the posterior distribution. Under the null hypothesis that there is no main effect of the B factor, we want to test that the $\beta$ parameters are all at 0. Thus, we need to estimate the prior and posterior densities at $\bold{0}$ (the zero vector, of length equal to the number of $\beta$ parameters). This is complicated by the fact that it is nontrivial to estimate the density of a multidimensional distribution. Thus, to use Savage-Dickey, we must reduce the dimensionality of the problem: Rather than working with the prior and posterior distributions of the $\beta$s, we would like to collapse the $\beta$s down to, ideally, 1 dimension.
+
+The hypothesis we want to test relates to how near to 0 the $\beta$s are. Thus, some measure of the dispersion of the $\beta$s around 0 would be an appropriate way to reduce the dimensionality of the problem. We will call this measure of dispersion $\Delta$. We chose to use the sample variance to measure dispersion, so we define $\Delta = \text{Var}(\beta)$. We chose to use variance because it resulted in relatively stable density estimates when compared with other measures of dispersion that we tried, such as standard deviation or the length of the $\beta$ vector (Note: The length of the vector in space, not the number of elements).
+
+We are interested in testing the hypothesis that all $\beta$s are 0, but using $\Delta$ instead of the $\beta$s. If all of the $\beta$s are 0, then $\Delta = 0$. Thus, to calculate the Savage-Dickey density ratio, we should compare the prior and posterior densities of $\Delta$ at 0. We used the `polspline` package (Kooperberg, 2015) for R for kernel density estimation as suggested by Wagenmakers et al. (2010).
+
+We are able to sample directly from the prior distribution of the cell means, $\mu$, because the model places priors directly on the cell means. We are also able to indirectly sample from the posterior distribution of the cell means, which is what happens during parameter estimation. We do not, however, know how to sample directly from the prior or posterior distribution of the ANOVA parameters, $\theta$. However, given samples from the prior and posterior distributions of the $\mu$s and the matrix $S$, we can calculate the prior and posterior distributions of the ANOVA parameters with the equation $\theta = S\mu$. This calculation done for each sample from the prior or posterior of $\mu$, resulting in prior and posterior distributions of $\theta$.
+
+To summarize, the steps of the procedure follow.
+
+1. Sample from the posterior distribution of the cell means, $\mu$, by doing model parameter estimation. 
+2. Sample from the prior distribution of the cell means. Take a number of samples equal to the number of samples taken from the posterior distribution, less burn-in iterations.
+3. Create $X$ (Note: e.g. in R with `model.matrix`) and calculate $S$. 
+4. Do the following substeps separately for the prior and posterior distributions: 
+    a. Using $S$ and the cell means, $\mu$, calculate $\theta$ (the ANOVA parameters). Do this for each sample of $\mu$ (i.e., each MCMC iteration or each sample from the prior). 
+    b. For each test of interest (i.e., main effects or interactions), select from $\theta$ the appropriate subset of ANOVA parameters (e.g., the $\beta$s for the test of the main effect of factor B). Do this for each sample of $\theta$. 
+    c. For each sample of $\theta$, calculate the ANOVA parameter(s) implied by the sums-to-zero constraint (e.g., $\beta_1$ from $\beta_2$ and $\beta_3$). 
+    d. Calculate $\Delta$ for each sample of ANOVA parameters (e.g., $\beta$s). 
+    e. Estimate the density of $\Delta$ at 0 with, for example, the `polspline` package. 
+5. Calculate the Savage-Dickey density ratio by dividing the prior density by the posterior density.
+This is an estimate of the Bayes factor in favor of the hypothesis that there is an effect (a main effect or interaction, depending on what is being tested). All of the preceding steps must be done separately for each model parameter (e.g., $P^M$).
+
+To obtain an estimate of the variability in Bayes factors, you can repeat this procedure either with 1. subsets of the iterations that form the posterior distribution and/or 2. with different samples from the prior. Taking new samples from the prior is very computationally cheap, so we used that approach. This whole procedure, including estimating the variability in the Bayes factors, is a part of the CatContModel package (Hardman, 2016) and can be accessed with the `testMainEffectsAndInteractions` function. (Note: CMBBHT had not been released yet, but the method as described in the appendix was implemented in the CatContModel package.)
 
 # References
 

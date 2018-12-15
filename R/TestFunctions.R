@@ -361,7 +361,7 @@ valueTest_SDDR = function(prior, posterior, testVal, pKept = 0.96, bounds=TRUE) 
 	postPKept = mean(postKept)
 	
 
-
+	# If bounds == FALSE, set bounds to NULL. This is needed because non-null bounds are needed just above
 	if (is.logical(bounds) && bounds == FALSE) {
 		post_bounds = prior_bounds = NULL
 	}

@@ -165,6 +165,10 @@ getEffectAssignmentColumns = function(dm, fNames) {
 getEffectParameters = function(cellMeans, factors, testedFactors, dmFactors = NULL, 
 															 contrastType = NULL, warnOnDrop=FALSE) {
 	
+	if (is.vector(cellMeans)) {
+		cellMeans = matrix(cellMeans, nrow=1)
+	}
+	
 	if (is.null(dmFactors)) {
 		if (length(testedFactors) == 1 && testedFactors == "(Intercept)") {
 			dmFactors = stats::formula(" ~ 1") #only use intercept

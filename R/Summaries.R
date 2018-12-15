@@ -33,9 +33,9 @@ summarizeEffectParameters = function(effects, fList = list(mean=mean), ps = c(0.
 			temp[ , n ] = fList[[n]](ef)
 		}
 		
-		qs = stats::quantile(ef, ps )
+		qs = stats::quantile(ef, ps)
 		for (j in 1:length(qs)) {
-			temp[,names(qs)[j]] = qs[j]
+			temp[ , names(qs)[j] ] = qs[j]
 		}
 		
 		res = rbind(res, temp)
@@ -53,7 +53,7 @@ summarizeEffectParameters = function(effects, fList = list(mean=mean), ps = c(0.
 #' @param summary A `data.frame` such as that returned by [`summarizeEffectParameters`].
 #' @param ctName The name of the column in `summary` that contains the measure of central tendency to plot.
 #' @param varNames A length 2 vector of names of the columns of `summary` that contain measures of variability in the form of endpoints of an error bar. If `NULL`, it selects the lowest and highest percentiles present in `summary`.
-#' @param mar Passed to the `mar` argument of `par()`. If `NULL`, it is ignored.
+#' @param mar Passed to the `mar` argument of `par()`. If `length(mar) == 1`, it is used for the left margin. If `NULL`, it is ignored.
 #' 
 #' @md
 #' @export
@@ -78,6 +78,9 @@ plotEffectParameterSummary = function(summary, ctName = "mean", varNames = NULL,
 	summary = summary[ seq.int(nrow(summary), 1), ]
 	
 	if (!is.null(mar)) {
+		if (length(mar) == 1) {
+			mar=c(3, mar, 1, 1)
+		}
 		graphics::par(mar=mar)
 	}
 	
