@@ -75,7 +75,7 @@ logspline_null = function(x, lbound=NULL, ubound=NULL) {
 #' See the "Deviance Measure" and "Bayes Factor Estimation with Savage-Dickey" 
 #' sections of the manual for more information about this procedure.
 #' 
-#' Due to a limitation of the density estimation procedure, the matrices of samples fom the 
+#' Due to a limitation of the density estimation procedure, the matrices of samples from the 
 #' prior and posterior should have the same number of rows. You will get a warning about this 
 #' if they are not the same length. Given that sampling from the prior is usually relatively 
 #' easy, once you have samples from the posterior, sample the same amount from the prior.
@@ -307,6 +307,7 @@ create_EPA_intervalTF = function(lower, upper) {
 #' @param testVal The value that will be tested. The null hypothesis is that `P == testVal` and the alternative hypothesis is that `P =/= testVal`.
 #' @param pKept The proportion of the prior and posterior distributions that will be kept. The rest will be discarded from the tails.
 #' @param bounds If `TRUE`, bounds are based on `pKept`. If `FALSE`, no bounds are used. If a length 2 numeric vector, those are the bounds that are used.
+#' @param warn If `TRUE`, warnings will be emitted 1) if the prior and posterior are different lengths and 2) if a numeric vector of bounds is provided but those bounds do not contain the `testVal`.
 #' 
 #' @return A list with several elements:
 #' * `success`: Whether density estimation was successful. If `FALSE`, all of the other values will be `NA` or `NULL`.
@@ -317,9 +318,9 @@ create_EPA_intervalTF = function(lower, upper) {
 #' 
 #' @md
 #' @export
-valueTest_SDDR = function(prior, posterior, testVal, pKept = 0.96, bounds=TRUE) {
+valueTest_SDDR = function(prior, posterior, testVal, pKept = 0.96, bounds=TRUE, warn=TRUE) {
 	
-	if (length(prior) != length(posterior)) {
+	if (warn && length(prior) != length(posterior)) {
 		warning("The length of the prior and posterior should be the same for accurate density estimation.")
 	}
 	
@@ -328,7 +329,9 @@ valueTest_SDDR = function(prior, posterior, testVal, pKept = 0.96, bounds=TRUE) 
 	prior_bounds = stats::quantile(prior, cips)
 	post_bounds = stats::quantile(posterior, cips)
 	
-	if (is.numeric(bounds) && length(bounds) == 2) {
+	numericBoundsProvided = is.numeric(bounds) && length(bounds) == 2
+	
+	if (numericBoundsProvided) {
 		post_bounds = prior_bounds = bounds
 	} else if (is.logical(bounds)) {
 		if (bounds == FALSE) {
@@ -339,7 +342,9 @@ valueTest_SDDR = function(prior, posterior, testVal, pKept = 0.96, bounds=TRUE) 
 	}
 	
 	if (testVal < prior_bounds[1] || testVal > prior_bounds[2] || testVal < post_bounds[1] || testVal > post_bounds[2]) {
-		warning("The testVal is outside of the bounds. The bounds have been adjusted so that the testVal is within bounds.")
+	  if (warn && numericBoundsProvided) {
+		  warning("The testVal is outside of the bounds. The bounds have been adjusted so that the testVal is within bounds.")
+	  }
 		if (testVal < prior_bounds[1] && testVal < prior_bounds[2]) {
 			prior_bounds[1] = testVal
 		}
